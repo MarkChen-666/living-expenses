@@ -650,7 +650,7 @@ let rateRefreshTimer = null;
 // ==================== SUPABASE INIT ====================
 const SUPABASE_URL = 'https://mjyhbchaugjnxjpdksib.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qeWhiY2hhdWdqbnhqcGRrc2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjM1MjksImV4cCI6MjEwMTMzOTUyOX0._FbBPFybO5eIpu-jkkWNLpolZxWLJ8gs2cvn76tFKJw';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==================== HELPERS ====================
 function $(id) { return document.getElementById(id); }
@@ -710,7 +710,7 @@ function getDefaultSettings() {
 }
 
 async function saveBillToCloud(bill) {
-  const { error } = await supabase.from('bills').insert({
+  const { error } = await sb.from('bills').insert({
     id: bill.id, date: bill.date, amount: bill.amount, currency: bill.currency,
     payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || ''
   });
@@ -719,13 +719,13 @@ async function saveBillToCloud(bill) {
 }
 
 async function deleteBillFromCloud(id) {
-  const { error } = await supabase.from('bills').delete().eq('id', id);
+  const { error } = await sb.from('bills').delete().eq('id', id);
   if (error) { console.error('Delete bill error:', error); toast('⚠️ 删除失败'); return false; }
   return true;
 }
 
 async function saveSettingsToCloud(settingsData) {
-  const { error } = await supabase.from('user_settings').upsert({
+  const { error } = await sb.from('user_settings').upsert({
     default_currency: settingsData.defaultCurrency,
     monthly_budget: settingsData.monthlyBudget,
     budget_currency: settingsData.budgetCurrency,
@@ -854,7 +854,7 @@ async function handleLogin() {
 
   if (!email || !pass) { errEl.textContent = '请填写邮箱和密码'; errEl.style.display = 'block'; return; }
 
-  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if (error) {
     if (error.message.includes('Invalid')) errEl.textContent = '邮箱或密码错误';
     else if (error.message.includes('Email not confirmed')) errEl.textContent = '请先验证邮箱';
@@ -880,7 +880,7 @@ async function handleRegister() {
   if (pass.length < 6) { errEl.textContent = '密码至少6位'; errEl.style.display = 'block'; return; }
   if (pass !== pass2) { errEl.textContent = '两次密码不一致'; errEl.style.display = 'block'; return; }
 
-  const { data, error } = await supabase.auth.signUp({ email, password: pass });
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
   if (error) {
     if (error.message.includes('already')) errEl.textContent = '该邮箱已被注册';
     else errEl.textContent = '注册失败：' + error.message;
@@ -905,7 +905,7 @@ async function handleRegister() {
 
 async function handleLogout() {
   if (rateRefreshTimer) { clearInterval(rateRefreshTimer); rateRefreshTimer = null; }
-  await supabase.auth.signOut();
+  await sb.auth.signOut();
   localStorage.removeItem(STORAGE_CURRENT);
   hide($('dashboard'));
   show($('authPage'));
@@ -1417,7 +1417,7 @@ async function saveSettings() {
   // Handle email change
   if (newEmail && newEmail !== currentUser) {
     if (!newEmail.includes('@')) { errEl.textContent = '请输入有效的邮箱地址'; errEl.style.display = 'block'; return; }
-    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    const { error } = await sb.auth.updateUser({ email: newEmail });
     if (error) { errEl.textContent = '邮箱修改失败：' + error.message; errEl.style.display = 'block'; return; }
     setCurrentUser(newEmail);
     currentUser = newEmail;
@@ -1428,7 +1428,7 @@ async function saveSettings() {
   if (newPass) {
     if (newPass.length < 6) { errEl.textContent = '新密码至少6位'; errEl.style.display = 'block'; return; }
     if (newPass !== newPass2) { errEl.textContent = '两次新密码不一致'; errEl.style.display = 'block'; return; }
-    const { error } = await supabase.auth.updateUser({ password: newPass });
+    const { error } = await sb.auth.updateUser({ password: newPass });
     if (error) { errEl.textContent = '密码修改失败：' + error.message; errEl.style.display = 'block'; return; }
   }
 
@@ -1655,7 +1655,7 @@ function debounce(fn, delay) {
 // ==================== INIT ====================
 async function init() {
   // Check Supabase session first
-  const { data: { session } } = await supabase.auth.getSession();
+  const { data: { session } } = await sb.auth.getSession();
 
   // Route: ?view=bills → bill analysis page
   if (window.location.search.includes('view=bills')) {
