@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>SDK Test</title></head><body>
+<h1>Supabase SDK Test</h1>
+<div id="status">Testing...</div>
+<script src="./supabase.min.js"></script>
+<script>
+try {
+  const s = window.supabase.createClient(
+    'https://mjyhbchaugjnxjpdksib.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qeWhiY2hhdWdqbnhqcGRrc2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjM1MjksImV4cCI6MjEwMTMzOTUyOX0._FbBPFybO5eIpu-jkkWNLpolZxWLJ8gs2cvn76tFKJw'
+  );
+  document.getElementById('status').textContent = 'SDK OK! createClient works.';
+  s.auth.getSession().then(function(r) {
+    document.getElementById('status').textContent += ' Auth API works.';
+  }).catch(function(e) {
+    document.getElementById('status').textContent += ' Auth API error: ' + e.message;
+  });
+} catch(e) {
+  document.getElementById('status').textContent = 'FAIL: ' + e.message;
+}
+</script>
+</body></html>
