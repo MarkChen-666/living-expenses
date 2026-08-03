@@ -175,7 +175,7 @@ body {
 
 /* Quick Add Card */
 .quick-add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 80px; }
+.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
 .quick-add-form .fg label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 .quick-add-form .fg input,
 .quick-add-form .fg select {
@@ -186,6 +186,12 @@ body {
 .quick-add-form .fg select:focus {
   outline: none; border-color: var(--primary);
 }
+.quick-add-form .fg.fg-date { flex: 0 0 140px; }
+.quick-add-form .fg.fg-amount { flex: 1 1 100px; }
+.quick-add-form .fg.fg-currency { flex: 1 2 140px; }
+.quick-add-form .fg.fg-payee { flex: 2 2 130px; }
+.quick-add-form .fg.fg-category { flex: 1 2 140px; }
+.quick-add-form .fg.fg-subcat { flex: 1 2 140px; }
 .quick-add-form .btn { height: 38px; flex-shrink: 0; }
 
 /* Chart Card */
@@ -258,7 +264,13 @@ body {
   .dashboard { padding: 0 12px 24px; }
   .nav-left h1 { font-size: 16px; }
   .quick-add-form { flex-direction: column; }
-  .quick-add-form .fg { width: 100%; }
+  .quick-add-form .fg { width: 100%; flex: 1 1 auto; }
+  .quick-add-form .fg.fg-date,
+  .quick-add-form .fg.fg-amount,
+  .quick-add-form .fg.fg-currency,
+  .quick-add-form .fg.fg-payee,
+  .quick-add-form .fg.fg-category,
+  .quick-add-form .fg.fg-subcat { flex: 0 0 auto; }
   .quick-add-form .fg input,
   .quick-add-form .fg select { width: 100%; }
   .auth-card { padding: 28px 20px; }
@@ -447,27 +459,27 @@ body {
         <h2><span class="card-icon">✏️</span> 快速记账</h2>
       </div>
       <div class="quick-add-form">
-        <div class="fg">
+        <div class="fg fg-date">
           <label>📅 日期</label>
           <input type="date" id="addDate">
         </div>
-        <div class="fg">
+        <div class="fg fg-amount">
           <label>💵 金额</label>
           <input type="number" id="addAmount" placeholder="0.00" min="0.01" step="0.01">
         </div>
-        <div class="fg">
+        <div class="fg fg-currency">
           <label>💱 币种</label>
           <select id="addCurrency"></select>
         </div>
-        <div class="fg">
+        <div class="fg fg-payee">
           <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填)</span></label>
           <input type="text" id="addPayee" placeholder="买什么了？（可不填）">
         </div>
-        <div class="fg">
+        <div class="fg fg-category">
           <label>📂 分类</label>
           <select id="addCategory" onchange="onCategoryChange()"></select>
         </div>
-        <div class="fg" id="subcatGroup" style="display:none">
+        <div class="fg fg-subcat" id="subcatGroup" style="display:none">
           <label>📁 子分类</label>
           <select id="addSubcategory"></select>
         </div>
