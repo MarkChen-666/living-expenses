@@ -317,6 +317,7 @@ body {
   animation: fadeIn .2s ease;
 }
 </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -331,8 +332,8 @@ body {
         <p>轻松管理每月开销</p>
       </div>
       <div class="form-group">
-        <label>👤 用户名</label>
-        <input type="text" id="loginUser" placeholder="请输入用户名" autocomplete="username">
+        <label>📧 邮箱</label>
+        <input type="email" id="loginUser" placeholder="请输入邮箱" autocomplete="email">
       </div>
       <div class="form-group">
         <label>🔒 密码</label>
@@ -351,8 +352,8 @@ body {
         <p>开始记录你的大学生活开销</p>
       </div>
       <div class="form-group">
-        <label>👤 用户名</label>
-        <input type="text" id="regUser" placeholder="请输入用户名">
+        <label>📧 邮箱</label>
+        <input type="email" id="regUser" placeholder="请输入邮箱">
       </div>
       <div class="form-group">
         <label>🔒 密码</label>
@@ -593,8 +594,8 @@ body {
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
       <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🔑 账户安全</h3>
       <div class="form-group">
-        <label>👤 新用户名</label>
-        <input type="text" id="setNewUsername" placeholder="留空则不修改">
+        <label>👤 新邮箱</label>
+        <input type="email" id="setNewUsername" placeholder="留空则不修改">
         <div class="error-msg" id="settingsError"></div>
       </div>
       <div class="form-group">
@@ -641,12 +642,15 @@ const CURRENCY_EMOJI = {
   JPY:'🇯🇵', KRW:'🇰🇷', AUD:'🇦🇺', CAD:'🇨🇦', CHF:'🇨🇭',
   SGD:'🇸🇬', SEK:'🇸🇪', NZD:'🇳🇿', THB:'🇹🇭', MYR:'🇲🇾'
 };
-const STORAGE_USERS = 'hku_ledger_users';
 const STORAGE_CURRENT = 'hku_ledger_current_user';
-const STORAGE_DATA_PREFIX = 'hku_ledger_data_';
 const STORAGE_RATES = 'hku_ledger_rates';
 const RATE_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 let rateRefreshTimer = null;
+
+// ==================== SUPABASE INIT ====================
+const SUPABASE_URL = 'https://mjyhbchaugjnxjpdksib.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qeWhiY2hhdWdqbnhqcGRrc2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjM1MjksImV4cCI6MjEwMTMzOTUyOX0._FbBPFybO5eIpu-jkkWNLpolZxWLJ8gs2cvn76tFKJw';
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==================== HELPERS ====================
 function $(id) { return document.getElementById(id); }
@@ -675,25 +679,60 @@ function toast(msg) {
   setTimeout(() => { t.remove(); }, 1800);
 }
 
-// ==================== STORAGE ====================
-function getUsers() {
-  try { return JSON.parse(localStorage.getItem(STORAGE_USERS)) || {}; }
-  catch { return {}; }
-}
-function saveUsers(users) { localStorage.setItem(STORAGE_USERS, JSON.stringify(users)); }
-
+// ==================== SUPABASE STORAGE ====================
 function getCurrentUser() { return localStorage.getItem(STORAGE_CURRENT); }
 function setCurrentUser(u) { localStorage.setItem(STORAGE_CURRENT, u); }
 
-function getUserData(username) {
-  try {
-    const raw = localStorage.getItem(STORAGE_DATA_PREFIX + username);
-    if (raw) return JSON.parse(raw);
-  } catch {}
-  return { bills: [], settings: { defaultCurrency: 'HKD', monthlyBudget: 0, budgetCurrency: 'HKD', displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES] } };
+async function getUserData() {
+  const { data: bills, error: billsErr } = await supabase
+    .from('bills').select('*').order('date', { ascending: false });
+  if (billsErr) { console.error('Failed to load bills:', billsErr); return { bills: [], settings: getDefaultSettings() }; }
+
+  const { data: settingsRow, error: settingsErr } = await supabase
+    .from('user_settings').select('*').maybeSingle();
+
+  let settings;
+  if (settingsRow && !settingsErr) {
+    settings = {
+      defaultCurrency: settingsRow.default_currency,
+      monthlyBudget: settingsRow.monthly_budget,
+      budgetCurrency: settingsRow.budget_currency,
+      displayCurrencies: JSON.parse(settingsRow.display_currencies || '["HKD","USD","EUR","GBP"]')
+    };
+  } else {
+    settings = getDefaultSettings();
+  }
+  return { bills: bills || [], settings };
 }
-function saveUserData(username, data) {
-  localStorage.setItem(STORAGE_DATA_PREFIX + username, JSON.stringify(data));
+
+function getDefaultSettings() {
+  return { defaultCurrency: 'HKD', monthlyBudget: 0, budgetCurrency: 'HKD', displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES] };
+}
+
+async function saveBillToCloud(bill) {
+  const { error } = await supabase.from('bills').insert({
+    id: bill.id, date: bill.date, amount: bill.amount, currency: bill.currency,
+    payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || ''
+  });
+  if (error) { console.error('Save bill error:', error); toast('⚠️ 保存失败，请重试'); return false; }
+  return true;
+}
+
+async function deleteBillFromCloud(id) {
+  const { error } = await supabase.from('bills').delete().eq('id', id);
+  if (error) { console.error('Delete bill error:', error); toast('⚠️ 删除失败'); return false; }
+  return true;
+}
+
+async function saveSettingsToCloud(settingsData) {
+  const { error } = await supabase.from('user_settings').upsert({
+    default_currency: settingsData.defaultCurrency,
+    monthly_budget: settingsData.monthlyBudget,
+    budget_currency: settingsData.budgetCurrency,
+    display_currencies: JSON.stringify(settingsData.displayCurrencies),
+  }, { onConflict: 'user_id' });
+  if (error) { console.error('Save settings error:', error); return false; }
+  return true;
 }
 
 // ==================== EXCHANGE RATES ====================
@@ -809,53 +848,64 @@ function convert(amount, from, to, rateData) {
 
 // ==================== AUTH ====================
 async function handleLogin() {
-  const user = $('loginUser').value.trim();
+  const email = $('loginUser').value.trim();
   const pass = $('loginPass').value;
   const errEl = $('loginError');
 
-  if (!user || !pass) { errEl.textContent = '请填写用户名和密码'; errEl.style.display = 'block'; return; }
-  const users = getUsers();
-  if (!users[user]) { errEl.textContent = '用户不存在，请先注册'; errEl.style.display = 'block'; return; }
-  const hash = await sha256(pass);
-  if (users[user] !== hash) { errEl.textContent = '密码错误'; errEl.style.display = 'block'; return; }
+  if (!email || !pass) { errEl.textContent = '请填写邮箱和密码'; errEl.style.display = 'block'; return; }
+
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
+  if (error) {
+    if (error.message.includes('Invalid')) errEl.textContent = '邮箱或密码错误';
+    else if (error.message.includes('Email not confirmed')) errEl.textContent = '请先验证邮箱';
+    else errEl.textContent = '登录失败：' + error.message;
+    errEl.style.display = 'block';
+    return;
+  }
 
   errEl.style.display = 'none';
-  setCurrentUser(user);
+  setCurrentUser(email);
   showDashboard();
 }
 
 async function handleRegister() {
-  const user = $('regUser').value.trim();
+  const email = $('regUser').value.trim();
   const pass = $('regPass').value;
   const pass2 = $('regPass2').value;
   const currency = $('regCurrency').value;
   const errEl = $('regError');
 
-  if (!user || !pass) { errEl.textContent = '请填写用户名和密码'; errEl.style.display = 'block'; return; }
-  if (user.length < 2) { errEl.textContent = '用户名至少2个字符'; errEl.style.display = 'block'; return; }
+  if (!email || !pass) { errEl.textContent = '请填写邮箱和密码'; errEl.style.display = 'block'; return; }
+  if (!email.includes('@')) { errEl.textContent = '请输入有效邮箱地址'; errEl.style.display = 'block'; return; }
   if (pass.length < 6) { errEl.textContent = '密码至少6位'; errEl.style.display = 'block'; return; }
   if (pass !== pass2) { errEl.textContent = '两次密码不一致'; errEl.style.display = 'block'; return; }
 
-  const users = getUsers();
-  if (users[user]) { errEl.textContent = '用户名已被注册'; errEl.style.display = 'block'; return; }
+  const { data, error } = await supabase.auth.signUp({ email, password: pass });
+  if (error) {
+    if (error.message.includes('already')) errEl.textContent = '该邮箱已被注册';
+    else errEl.textContent = '注册失败：' + error.message;
+    errEl.style.display = 'block';
+    return;
+  }
 
-  const hash = await sha256(pass);
-  users[user] = hash;
-  saveUsers(users);
+  if (!data.user) { errEl.textContent = '注册失败，请重试'; errEl.style.display = 'block'; return; }
 
-  // Create initial user data with chosen currency
-  const data = getUserData(user);
-  data.settings.defaultCurrency = currency;
-  data.settings.budgetCurrency = currency;
-  saveUserData(user, data);
+  // Create initial settings in cloud
+  await saveSettingsToCloud({
+    defaultCurrency: currency,
+    budgetCurrency: currency,
+    displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES],
+    monthlyBudget: 0,
+  });
 
   errEl.style.display = 'none';
-  setCurrentUser(user);
+  setCurrentUser(email);
   showDashboard();
 }
 
-function handleLogout() {
+async function handleLogout() {
   if (rateRefreshTimer) { clearInterval(rateRefreshTimer); rateRefreshTimer = null; }
+  await supabase.auth.signOut();
   localStorage.removeItem(STORAGE_CURRENT);
   hide($('dashboard'));
   show($('authPage'));
@@ -871,6 +921,7 @@ let currentUser = null;
 let rateData = null;
 let chartInstance = null;
 let currentViewMonth = null; // null = current month
+let currentSettings = null; // cached settings
 
 async function showDashboard() {
   hide($('authPage'));
@@ -894,13 +945,17 @@ async function showDashboard() {
     refreshAll();
   }, RATE_CACHE_MS);
 
+  // Load user data from cloud
+  const userData = await getUserData();
+  currentSettings = userData.settings;
+
   // Setup form defaults
   $('addDate').value = new Date().toISOString().slice(0, 10);
   populateCategorySelect($('addCategory'));
-  populateCurrencySelect($('addCurrency'), getUserData(currentUser).settings.defaultCurrency);
+  populateCurrencySelect($('addCurrency'), currentSettings.defaultCurrency);
 
   // Setup settings modal
-  populateCurrencySelect($('setCurrency'), getUserData(currentUser).settings.defaultCurrency);
+  populateCurrencySelect($('setCurrency'), currentSettings.defaultCurrency);
 
   // Setup bill month filter
   populateMonthFilter();
@@ -911,10 +966,11 @@ async function showDashboard() {
   refreshAll();
 }
 
-function refreshAll() {
-  const data = getUserData(currentUser);
-  const bills = data.bills;
-  const settings = data.settings;
+async function refreshAll() {
+  const userData = await getUserData();
+  const bills = userData.bills;
+  const settings = userData.settings;
+  currentSettings = settings;
   const now = new Date();
   const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
@@ -954,7 +1010,7 @@ function updateRateUI() {
   }
 
   const baseCurrency = 'CNY';
-  const displayCurrencies = getUserData(currentUser).settings.displayCurrencies || DEFAULT_DISPLAY_CURRENCIES;
+  const displayCurrencies = (currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES;
   let html = '';
   for (const c of displayCurrencies) {
     if (c === baseCurrency || !rateData.rates[c]) continue;
@@ -1021,8 +1077,7 @@ function toggleCurrencyPicker() {
 }
 
 function updateCurrencyToggles() {
-  const data = getUserData(currentUser);
-  const selected = data.settings.displayCurrencies || DEFAULT_DISPLAY_CURRENCIES;
+  const selected = (currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES;
   let html = '';
   for (const c of CURRENCIES) {
     if (c === 'CNY') continue;
@@ -1035,15 +1090,14 @@ function updateCurrencyToggles() {
   $('currencyToggles').innerHTML = html;
 }
 
-function toggleCurrency(currency, show) {
-  const data = getUserData(currentUser);
-  if (!data.settings.displayCurrencies) data.settings.displayCurrencies = [...DEFAULT_DISPLAY_CURRENCIES];
+async function toggleCurrency(currency, show) {
+  if (!currentSettings.displayCurrencies) currentSettings.displayCurrencies = [...DEFAULT_DISPLAY_CURRENCIES];
   if (show) {
-    if (!data.settings.displayCurrencies.includes(currency)) data.settings.displayCurrencies.push(currency);
+    if (!currentSettings.displayCurrencies.includes(currency)) currentSettings.displayCurrencies.push(currency);
   } else {
-    data.settings.displayCurrencies = data.settings.displayCurrencies.filter(c => c !== currency);
+    currentSettings.displayCurrencies = currentSettings.displayCurrencies.filter(c => c !== currency);
   }
-  saveUserData(currentUser, data);
+  await saveSettingsToCloud(currentSettings);
   updateRateUI();
 }
 
@@ -1070,20 +1124,19 @@ function updateBudgetUI(monthTotal, settings) {
 }
 
 function startEditBudget() {
-  const data = getUserData(currentUser);
-  $('budgetEditInput').value = data.settings.monthlyBudget || '';
+  $('budgetEditInput').value = (currentSettings && currentSettings.monthlyBudget) || '';
   $('budgetEditForm').style.display = 'inline-flex';
   $('budgetEditBtn').style.display = 'none';
   $('budgetEditDisplay').style.display = 'none';
   $('budgetEditInput').focus();
 }
 
-function saveBudget() {
+async function saveBudget() {
   const val = parseFloat($('budgetEditInput').value) || 0;
   if (val < 0) { toast('⚠️ 预算不能为负数'); return; }
-  const data = getUserData(currentUser);
-  data.settings.monthlyBudget = val;
-  saveUserData(currentUser, data);
+  if (!currentSettings) currentSettings = getDefaultSettings();
+  currentSettings.monthlyBudget = val;
+  await saveSettingsToCloud(currentSettings);
   cancelEditBudget();
   refreshAll();
   toast(val > 0 ? '✅ 预算已更新' : '✅ 预算已清除');
@@ -1258,10 +1311,10 @@ function escHtml(str) {
   return div.innerHTML;
 }
 
-function populateMonthFilter() {
-  const data = getUserData(currentUser);
+async function populateMonthFilter() {
+  const userData = await getUserData();
   const months = new Set();
-  for (const b of data.bills) {
+  for (const b of userData.bills) {
     months.add(b.date.slice(0, 7));
   }
   const sorted = [...months].sort().reverse();
@@ -1283,7 +1336,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 });
 
-function addBill() {
+async function addBill() {
   const date = $('addDate').value;
   const amountStr = $('addAmount').value;
   const currency = $('addCurrency').value;
@@ -1312,9 +1365,7 @@ function addBill() {
     createdAt: Date.now(),
   };
 
-  const data = getUserData(currentUser);
-  data.bills.push(bill);
-  saveUserData(currentUser, data);
+  if (!(await saveBillToCloud(bill))) return;
 
   // Reset form
   $('addAmount').value = '';
@@ -1332,11 +1383,9 @@ function addBill() {
   toast('✅ 账单已添加');
 }
 
-function deleteBill(id) {
+async function deleteBill(id) {
   if (!confirm('确定删除这笔账单吗？')) return;
-  const data = getUserData(currentUser);
-  data.bills = data.bills.filter(b => b.id !== id);
-  saveUserData(currentUser, data);
+  if (!(await deleteBillFromCloud(id))) return;
   populateMonthFilter();
   refreshAll();
   toast('🗑️ 账单已删除');
@@ -1344,8 +1393,7 @@ function deleteBill(id) {
 
 // ==================== SETTINGS ====================
 function openSettings() {
-  const data = getUserData(currentUser);
-  $('setCurrency').value = data.settings.defaultCurrency;
+  $('setCurrency').value = currentSettings ? currentSettings.defaultCurrency : 'HKD';
   $('setNewUsername').value = '';
   $('setNewPassword').value = '';
   $('setNewPassword2').value = '';
@@ -1359,53 +1407,36 @@ function closeSettings() {
 
 async function saveSettings() {
   const currency = $('setCurrency').value;
-  const newUsername = $('setNewUsername').value.trim();
+  const newEmail = $('setNewUsername').value.trim();
   const newPass = $('setNewPassword').value;
   const newPass2 = $('setNewPassword2').value;
   const errEl = $('settingsError');
 
   errEl.style.display = 'none';
 
-  // Handle username change
-  if (newUsername && newUsername !== currentUser) {
-    if (newUsername.length < 2) { errEl.textContent = '用户名至少2个字符'; errEl.style.display = 'block'; return; }
-    const users = getUsers();
-    if (users[newUsername]) { errEl.textContent = '该用户名已被使用'; errEl.style.display = 'block'; return; }
+  // Handle email change
+  if (newEmail && newEmail !== currentUser) {
+    if (!newEmail.includes('@')) { errEl.textContent = '请输入有效的邮箱地址'; errEl.style.display = 'block'; return; }
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
+    if (error) { errEl.textContent = '邮箱修改失败：' + error.message; errEl.style.display = 'block'; return; }
+    setCurrentUser(newEmail);
+    currentUser = newEmail;
+    $('navUser').textContent = '👋 ' + currentUser;
   }
 
   // Handle password change
   if (newPass) {
     if (newPass.length < 6) { errEl.textContent = '新密码至少6位'; errEl.style.display = 'block'; return; }
     if (newPass !== newPass2) { errEl.textContent = '两次新密码不一致'; errEl.style.display = 'block'; return; }
+    const { error } = await supabase.auth.updateUser({ password: newPass });
+    if (error) { errEl.textContent = '密码修改失败：' + error.message; errEl.style.display = 'block'; return; }
   }
 
-  const data = getUserData(currentUser);
-  data.settings.defaultCurrency = currency;
-  data.settings.budgetCurrency = currency;
-
-  // Apply username change
-  if (newUsername && newUsername !== currentUser) {
-    const users = getUsers();
-    const hash = users[currentUser];
-    delete users[currentUser];
-    users[newUsername] = hash;
-    saveUsers(users);
-    // Move data to new key
-    saveUserData(newUsername, data);
-    localStorage.removeItem(STORAGE_DATA_PREFIX + currentUser);
-    setCurrentUser(newUsername);
-    currentUser = newUsername;
-    $('navUser').textContent = '👋 ' + currentUser;
-  }
-
-  // Apply password change
-  if (newPass) {
-    const users = getUsers();
-    users[currentUser] = await sha256(newPass);
-    saveUsers(users);
-  }
-
-  saveUserData(currentUser, data);
+  // Save currency settings
+  if (!currentSettings) currentSettings = getDefaultSettings();
+  currentSettings.defaultCurrency = currency;
+  currentSettings.budgetCurrency = currency;
+  await saveSettingsToCloud(currentSettings);
 
   closeSettings();
   updateRateUI();
@@ -1497,10 +1528,10 @@ function showBillAnalysis() {
   renderBillAnalysis();
 }
 
-function getFilteredBills() {
-  const data = getUserData(currentUser);
-  let bills = [...data.bills];
-  const settings = data.settings;
+async function getFilteredBills() {
+  const userData = await getUserData();
+  let bills = [...userData.bills];
+  const settings = userData.settings;
 
   const dateFrom = $('baDateFrom').value;
   const dateTo = $('baDateTo').value;
@@ -1540,8 +1571,8 @@ function getFilteredBills() {
   return { bills, settings };
 }
 
-function renderBillAnalysis() {
-  const { bills, settings } = getFilteredBills();
+async function renderBillAnalysis() {
+  const { bills, settings } = await getFilteredBills();
   const currency = settings.budgetCurrency;
 
   // Stats
@@ -1606,11 +1637,9 @@ function resetBillFilters() {
   renderBillAnalysis();
 }
 
-function deleteBillFromAnalysis(id) {
+async function deleteBillFromAnalysis(id) {
   if (!confirm('确定删除这笔账单吗？')) return;
-  const data = getUserData(currentUser);
-  data.bills = data.bills.filter(b => b.id !== id);
-  saveUserData(currentUser, data);
+  if (!(await deleteBillFromCloud(id))) return;
   renderBillAnalysis();
   toast('🗑️ 账单已删除');
 }
@@ -1625,32 +1654,29 @@ function debounce(fn, delay) {
 
 // ==================== INIT ====================
 async function init() {
+  // Check Supabase session first
+  const { data: { session } } = await supabase.auth.getSession();
+
   // Route: ?view=bills → bill analysis page
   if (window.location.search.includes('view=bills')) {
-    const savedUser = getCurrentUser();
-    const users = getUsers();
-    if (!savedUser || !users[savedUser]) {
+    if (!session) {
       window.location.href = window.location.pathname;
       return;
     }
-    currentUser = savedUser;
+    currentUser = session.user.email;
     rateData = await fetchRates();
     showBillAnalysis();
     return;
   }
 
-  // Check if already logged in
-  const savedUser = getCurrentUser();
-  if (savedUser) {
-    // Verify user exists
-    const users = getUsers();
-    if (users[savedUser]) {
-      currentUser = savedUser;
-      await showDashboard();
-      return;
-    }
-    localStorage.removeItem(STORAGE_CURRENT);
+  // Check if already logged in via Supabase
+  if (session) {
+    currentUser = session.user.email;
+    setCurrentUser(currentUser);
+    await showDashboard();
+    return;
   }
+
   // Show auth page
   show($('authPage'));
   hide($('dashboard'));
