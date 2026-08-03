@@ -317,7 +317,6 @@ body {
   animation: fadeIn .2s ease;
 }
 </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -650,7 +649,41 @@ let rateRefreshTimer = null;
 // ==================== SUPABASE INIT ====================
 const SUPABASE_URL = 'https://mjyhbchaugjnxjpdksib.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qeWhiY2hhdWdqbnhqcGRrc2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjM1MjksImV4cCI6MjEwMTMzOTUyOX0._FbBPFybO5eIpu-jkkWNLpolZxWLJ8gs2cvn76tFKJw';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let supabase = null;
+let supabaseReady = false;
+
+function loadSupabaseJs() {
+  if (supabaseReady) return Promise.resolve(true);
+  return new Promise((resolve) => {
+    // If already cached from a previous attempt
+    if (typeof window.supabase !== 'undefined') {
+      try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); supabaseReady = true; resolve(true); }
+      catch(e) { resolve(false); }
+      return;
+    }
+    const cdns = [
+      'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
+      'https://unpkg.com/@supabase/supabase-js@2',
+    ];
+    let tried = 0;
+    function tryNext() {
+      if (tried >= cdns.length) { resolve(false); return; }
+      const script = document.createElement('script');
+      script.src = cdns[tried];
+      script.onload = () => {
+        try { supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); supabaseReady = true; resolve(true); }
+        catch(e) { tried++; tryNext(); }
+      };
+      script.onerror = () => { tried++; tryNext(); };
+      document.head.appendChild(script);
+      // Timeout per CDN: 10 seconds
+      setTimeout(() => { if (!supabaseReady) { tried++; tryNext(); } }, 10000);
+    }
+    tryNext();
+    // Overall timeout: 25 seconds
+    setTimeout(() => { if (!supabaseReady) resolve(false); }, 25000);
+  });
+}
 
 // ==================== HELPERS ====================
 function $(id) { return document.getElementById(id); }
@@ -848,6 +881,7 @@ function convert(amount, from, to, rateData) {
 
 // ==================== AUTH ====================
 async function handleLogin() {
+  if (!supabaseReady) { toast('正在连接服务器，请稍后再试'); return; }
   const email = $('loginUser').value.trim();
   const pass = $('loginPass').value;
   const errEl = $('loginError');
@@ -869,6 +903,7 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
+  if (!supabaseReady) { toast('正在连接服务器，请稍后再试'); return; }
   const email = $('regUser').value.trim();
   const pass = $('regPass').value;
   const pass2 = $('regPass2').value;
@@ -1654,6 +1689,16 @@ function debounce(fn, delay) {
 
 // ==================== INIT ====================
 async function init() {
+  // Load Supabase SDK first (with CDN fallback)
+  const loaded = await loadSupabaseJs();
+  if (!loaded) {
+    show($('authPage'));
+    hide($('dashboard'));
+    const errEl = $('loginError');
+    if (errEl) { errEl.textContent = '网络连接失败，请检查网络后刷新页面'; errEl.style.display = 'block'; }
+    return;
+  }
+
   // Check Supabase session first
   const { data: { session } } = await supabase.auth.getSession();
 
