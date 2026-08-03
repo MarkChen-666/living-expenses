@@ -459,8 +459,8 @@ body {
           <select id="addCurrency"></select>
         </div>
         <div class="fg">
-          <label>🏪 收款方 <span style="color:var(--text-muted);font-weight:400">(选填)</span></label>
-          <input type="text" id="addPayee" placeholder="去哪了？（可不填）">
+          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填)</span></label>
+          <input type="text" id="addPayee" placeholder="买什么了？（可不填）">
         </div>
         <div class="fg">
           <label>📂 分类</label>
@@ -540,7 +540,7 @@ body {
         </div>
         <div class="ba-fg">
           <label>🔍 关键词</label>
-          <input type="text" id="baKeyword" placeholder="搜索收款方">
+          <input type="text" id="baKeyword" placeholder="搜索用途">
         </div>
         <div class="ba-fg">
           <label>💰 金额范围</label>
@@ -571,7 +571,7 @@ body {
       <div style="overflow-x:auto">
         <table class="ba-table" id="baTable">
           <thead><tr>
-            <th>日期</th><th>原币金额</th><th>换算金额</th><th>收款方</th><th>分类</th><th>操作</th>
+            <th>日期</th><th>原币金额</th><th>换算金额</th><th>用途</th><th>分类</th><th>操作</th>
           </tr></thead>
           <tbody id="baTableBody"></tbody>
         </table>
@@ -1236,8 +1236,8 @@ function updateBillList(bills, settings) {
         <div class="bill-left">
           <span class="bill-cat-dot" style="background:${dotColor}"></span>
           <div class="bill-info">
-            <div class="bill-payee">${escHtml(b.payee || '（未填写）')}</div>
-            <div class="bill-meta">${b.date} · ${cat.emoji || ''} ${b.category}${b.subcategory ? ' › ' + b.subcategory : ''}</div>
+            <div class="bill-payee">${cat.emoji || ''} ${b.category}${b.subcategory ? ' › ' + b.subcategory : ''}</div>
+            <div class="bill-meta">${b.date}${b.payee ? ' · ' + escHtml(b.payee) : ''}</div>
           </div>
         </div>
         <div class="bill-right">
