@@ -1457,17 +1457,13 @@ function populateCurrencySelect(select, selected) {
 
 // ==================== BILL ANALYSIS PAGE ====================
 function openBillAnalysis() {
-  window.open(window.location.pathname + '?view=bills', '_blank');
+  // 方案A：在当前页面直接跳转到账单分析
+  window.location.assign(window.location.pathname + '?view=bills');
 }
 
 function goBackFromAnalysis() {
-  // 先尝试关闭窗口（对 window.open 打开的标签页有效）
-  window.close();
-  // 回退：如果浏览器阻止了 window.close()，跳转回主页
-  // 使用 replace 避免产生多余的历史记录
-  setTimeout(() => {
-    window.location.replace(window.location.pathname);
-  }, 500);
+  // 返回主页（去掉 ?view=bills 参数）
+  window.location.assign(window.location.pathname);
 }
 
 function showBillAnalysis() {
