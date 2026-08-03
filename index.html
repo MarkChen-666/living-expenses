@@ -320,13 +320,14 @@ body {
   .ba-fg input, .ba-fg select { width: 100%; }
 }
 /* ===== Animations ===== */
-@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 .card { animation: fadeIn .35s ease; }
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
   background: #1F2937; color: #fff; padding: 10px 24px; border-radius: 8px;
   font-size: 14px; z-index: 300; pointer-events: none;
-  animation: fadeIn .2s ease;
+  animation: slideUp .2s ease;
 }
 </style>
   <script src="./supabase.min.js"></script>
