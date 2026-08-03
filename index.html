@@ -174,25 +174,25 @@ body {
 .budget-text { font-size: 14px; color: var(--text-secondary); }
 
 /* Quick Add Card */
-.quick-add-form { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
-.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; }
-.quick-add-form .fg label { font-size: 12px; font-weight: 600; color: var(--text-secondary); }
+.quick-add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
+.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 80px; }
+.quick-add-form .fg label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 .quick-add-form .fg input,
 .quick-add-form .fg select {
-  padding: 9px 12px; border: 1.5px solid var(--border);
+  padding: 9px 12px; border: 1.5px solid var(--border); width: 100%; box-sizing: border-box;
   border-radius: var(--radius-sm); font-size: 14px; background: var(--surface);
 }
 .quick-add-form .fg input:focus,
 .quick-add-form .fg select:focus {
   outline: none; border-color: var(--primary);
 }
-.quick-add-form .btn { height: 38px; }
+.quick-add-form .btn { height: 38px; flex-shrink: 0; }
 
 /* Chart Card */
 .chart-wrap { max-width: 280px; margin: 0 auto; }
 .category-legend { margin-top: 16px; }
 .category-legend-item {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; gap: 16px;
   padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border);
 }
 .category-legend-item:last-child { border-bottom: none; }
@@ -200,8 +200,8 @@ body {
   width: 10px; height: 10px; border-radius: 50%;
   margin-right: 8px; flex-shrink: 0;
 }
-.legend-left { display: flex; align-items: center; }
-.legend-right { color: var(--text-secondary); }
+.legend-left { display: flex; align-items: center; flex: 1; min-width: 0; }
+.legend-right { white-space: nowrap; text-align: left; }
 
 /* Bill List Card */
 .bill-header-row {
@@ -509,7 +509,7 @@ body {
       <h1>Living Expenses — 账单分析</h1>
     </div>
     <div class="nav-right">
-      <button class="btn btn-sm btn-outline" onclick="window.location.href=window.location.pathname">← 返回主页</button>
+      <button class="btn btn-sm btn-outline" onclick="goBackFromAnalysis()">← 返回主页</button>
     </div>
   </nav>
 
@@ -1131,6 +1131,9 @@ function updateChart(monthBills, settings) {
   }
   const total = Object.values(totals).reduce((a, b) => a + b, 0);
 
+  // Sort by amount descending for legend display
+  items.sort((a, b) => (totals[b.key] || 0) - (totals[a.key] || 0));
+
   // Destroy previous chart
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
 
@@ -1455,6 +1458,17 @@ function populateCurrencySelect(select, selected) {
 // ==================== BILL ANALYSIS PAGE ====================
 function openBillAnalysis() {
   window.open(window.location.pathname + '?view=bills', '_blank');
+}
+
+function goBackFromAnalysis() {
+  // 尝试关闭窗口（对脚本打开的窗口有效）
+  window.close();
+  // 如果关闭失败（如手动输入URL进入），回退到跳转主页
+  setTimeout(() => {
+    if (!document.hidden && document.visibilityState !== 'hidden') {
+      window.location.href = window.location.pathname;
+    }
+  }, 300);
 }
 
 function showBillAnalysis() {
