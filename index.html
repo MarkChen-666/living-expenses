@@ -509,7 +509,7 @@ body {
       <h1>Living Expenses — 账单分析</h1>
     </div>
     <div class="nav-right">
-      <button class="btn btn-sm btn-outline" onclick="goBackFromAnalysis()">← 返回主页</button>
+      <button class="btn btn-outline" onclick="goBackFromAnalysis()" style="padding:10px 24px;font-size:15px;font-weight:700">← 返回主页</button>
     </div>
   </nav>
 
@@ -1461,14 +1461,13 @@ function openBillAnalysis() {
 }
 
 function goBackFromAnalysis() {
-  // 尝试关闭窗口（对脚本打开的窗口有效）
+  // 先尝试关闭窗口（对 window.open 打开的标签页有效）
   window.close();
-  // 如果关闭失败（如手动输入URL进入），回退到跳转主页
+  // 回退：如果浏览器阻止了 window.close()，跳转回主页
+  // 使用 replace 避免产生多余的历史记录
   setTimeout(() => {
-    if (!document.hidden && document.visibilityState !== 'hidden') {
-      window.location.href = window.location.pathname;
-    }
-  }, 300);
+    window.location.replace(window.location.pathname);
+  }, 500);
 }
 
 function showBillAnalysis() {
