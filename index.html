@@ -1491,7 +1491,7 @@ async function addBill() {
 
   // Validation
   if (!date) { toast('⚠️ 请选择日期'); return; }
-  if (!amountStr || parseFloat(amountStr) <= 0) { toast('⚠️ 请输入有效金额'); return; }
+  if (!amountStr || parseFloat(amountStr) < 0.01) { toast('⚠️ 金额不能小于 0.01'); return; }
   if (parseFloat(amountStr) > 99999999) { toast('⚠️ 金额不能超过 99,999,999'); return; }
   if (payee.length > 10) { toast('⚠️ 用途不能超过10个字符'); return; }
   if (!category) { toast('⚠️ 请选择分类'); return; }
