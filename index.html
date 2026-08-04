@@ -755,7 +755,9 @@ async function deleteBillFromCloud(id) {
 }
 
 async function saveSettingsToCloud(settingsData) {
+  const { data: { user } } = await sb.auth.getUser();
   const { error } = await sb.from('user_settings').upsert({
+    user_id: user.id,
     default_currency: settingsData.defaultCurrency,
     monthly_budget: settingsData.monthlyBudget,
     budget_currency: settingsData.budgetCurrency,
@@ -1121,13 +1123,18 @@ function updateCurrencyToggles() {
 }
 
 async function toggleCurrency(currency, show) {
+  const prev = [...((currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES)];
   if (!currentSettings.displayCurrencies) currentSettings.displayCurrencies = [...DEFAULT_DISPLAY_CURRENCIES];
   if (show) {
     if (!currentSettings.displayCurrencies.includes(currency)) currentSettings.displayCurrencies.push(currency);
   } else {
     currentSettings.displayCurrencies = currentSettings.displayCurrencies.filter(c => c !== currency);
   }
-  await saveSettingsToCloud(currentSettings);
+  if (!(await saveSettingsToCloud(currentSettings))) {
+    currentSettings.displayCurrencies = prev;
+    toast('⚠️ 保存失败，请重试');
+    return;
+  }
   updateRateUI();
 }
 
