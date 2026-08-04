@@ -3,7 +3,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="color-scheme" content="light">
 <title>Living Expenses — 个人记账</title>
 <style>
 /* ===== Reset & Base ===== */
@@ -35,7 +34,6 @@ body {
   color: var(--text);
   line-height: 1.6;
   min-height: 100vh;
-  color-scheme: light;
 }
 
 /* ===== Auth Page ===== */
@@ -62,11 +60,10 @@ body {
 }
 .form-group input, .form-group select {
   width: 100%; padding: 10px 14px;
-  border: 1px solid var(--border);
-  border-radius: 0;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm);
   font-size: 15px; color: var(--text);
   background: var(--surface);
-  appearance: auto; -webkit-appearance: auto; color-scheme: light;
   transition: border-color .15s, box-shadow .15s;
 }
 .form-group input:focus, .form-group select:focus {
@@ -125,7 +122,6 @@ body {
 .card {
   background: var(--surface); border-radius: var(--radius);
   box-shadow: var(--shadow); padding: 24px;
-  overflow: visible;
 }
 .card-header {
   display: flex; align-items: center; justify-content: space-between;
@@ -159,28 +155,15 @@ body {
 }
 .converter-row input:focus { outline: none; border-color: var(--primary); }
 .converter-row select {
-  padding: 8px 12px; border: 1px solid var(--border);
-  border-radius: 0; font-size: 14px; background: var(--surface);
-  appearance: auto; -webkit-appearance: auto; color-scheme: light;
+  padding: 8px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 14px; background: var(--surface);
 }
 .converter-result {
   font-weight: 800; font-size: 22px; color: var(--primary);
   margin-left: 8px; white-space: nowrap;
 }
 
-/* Budget Section (inside rate card) */
-.budget-section {
-  margin-top: 18px;
-  padding-top: 18px;
-  border-top: 1.5px solid var(--border);
-}
-.budget-section-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 10px;
-}
-.budget-section-header h3 {
-  font-size: 15px; font-weight: 700; margin: 0;
-}
+/* Budget Card */
 .budget-bar-wrap {
   height: 12px; background: #E5E7EB; border-radius: 6px;
   overflow: hidden; margin-top: 8px;
@@ -189,54 +172,20 @@ body {
   height: 100%; border-radius: 6px; transition: width .5s ease, background .5s ease;
 }
 .budget-text { font-size: 14px; color: var(--text-secondary); }
-.budget-stats {
-  display: flex; gap: 12px; margin-top: 12px;
-}
-.budget-stat-item {
-  flex: 1; text-align: center;
-  padding: 10px 8px; background: var(--bg); border-radius: 8px;
-}
-.budget-stat-value { font-size: 18px; font-weight: 800; color: var(--text); }
-.budget-stat-value.danger { color: var(--danger); }
-.budget-stat-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-.budget-top3 {
-  margin-top: 12px; font-size: 12px; color: var(--text-secondary);
-  display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-}
-.budget-top3-item {
-  display: flex; align-items: center; gap: 4px;
-}
 
 /* Quick Add Card */
 .quick-add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; min-width: 90px; position: relative; z-index: 1; }
+.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 80px; }
 .quick-add-form .fg label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
-.quick-add-form .fg input {
-  padding: 9px 12px; border: 1px solid var(--border); width: 100%; box-sizing: border-box;
+.quick-add-form .fg input,
+.quick-add-form .fg select {
+  padding: 9px 12px; border: 1.5px solid var(--border); width: 100%; box-sizing: border-box;
   border-radius: var(--radius-sm); font-size: 14px; background: var(--surface);
 }
-.quick-add-form .fg select {
-  padding: 9px 12px; width: 100%; box-sizing: border-box;
-  font-size: 14px;
-  border: 1px solid #D1D5DB; border-radius: 6px;
-  background: #FFFFFF; color: #111827;
-  appearance: auto; -webkit-appearance: auto;
-  color-scheme: light;
-  cursor: pointer;
-}
+.quick-add-form .fg input:focus,
 .quick-add-form .fg select:focus {
   outline: none; border-color: var(--primary);
-  box-shadow: 0 0 0 3px var(--primary-light);
 }
-.quick-add-form .fg input:focus {
-  outline: none; border-color: var(--primary);
-}
-.quick-add-form .fg.fg-date { flex: 0 0 140px; }
-.quick-add-form .fg.fg-amount { flex: 1 1 100px; }
-.quick-add-form .fg.fg-currency { flex: 1 2 140px; }
-.quick-add-form .fg.fg-payee { flex: 2 2 130px; }
-.quick-add-form .fg.fg-category { flex: 1 2 140px; }
-.quick-add-form .fg.fg-subcat { flex: 1 2 140px; }
 .quick-add-form .btn { height: 38px; flex-shrink: 0; }
 
 /* Chart Card */
@@ -259,9 +208,8 @@ body {
   display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
 }
 .bill-header-row select {
-  padding: 7px 12px; border: 1px solid var(--border);
-  border-radius: 0; font-size: 13px; background: var(--surface);
-  appearance: auto; -webkit-appearance: auto; color-scheme: light;
+  padding: 7px 12px; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); font-size: 13px; background: var(--surface);
 }
 .bill-list { max-height: 460px; overflow-y: auto; }
 .bill-item {
@@ -310,13 +258,7 @@ body {
   .dashboard { padding: 0 12px 24px; }
   .nav-left h1 { font-size: 16px; }
   .quick-add-form { flex-direction: column; }
-  .quick-add-form .fg { width: 100%; flex: 1 1 auto; }
-  .quick-add-form .fg.fg-date,
-  .quick-add-form .fg.fg-amount,
-  .quick-add-form .fg.fg-currency,
-  .quick-add-form .fg.fg-payee,
-  .quick-add-form .fg.fg-category,
-  .quick-add-form .fg.fg-subcat { flex: 0 0 auto; }
+  .quick-add-form .fg { width: 100%; }
   .quick-add-form .fg input,
   .quick-add-form .fg select { width: 100%; }
   .auth-card { padding: 28px 20px; }
@@ -343,9 +285,8 @@ body {
 .ba-fg { display: flex; flex-direction: column; gap: 4px; }
 .ba-fg label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
 .ba-fg input, .ba-fg select {
-  padding: 7px 10px; border: 1px solid var(--border); border-radius: 0;
+  padding: 7px 10px; border: 1.5px solid var(--border); border-radius: 6px;
   font-size: 13px; background: var(--surface);
-  appearance: auto; -webkit-appearance: auto; color-scheme: light;
 }
 .ba-fg input:focus, .ba-fg select:focus { outline: none; border-color: var(--primary); }
 .ba-table { width: 100%; border-collapse: collapse; font-size: 13px; }
@@ -367,15 +308,16 @@ body {
   .ba-fg input, .ba-fg select { width: 100%; }
 }
 /* ===== Animations ===== */
-@keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.card { animation: fadeIn .35s ease; }
 .toast {
   position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
   background: #1F2937; color: #fff; padding: 10px 24px; border-radius: 8px;
   font-size: 14px; z-index: 300; pointer-events: none;
-  animation: slideUp .2s ease;
+  animation: fadeIn .2s ease;
 }
 </style>
-  <script src="./supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
 
@@ -457,7 +399,7 @@ body {
 
   <div class="dashboard-grid">
     <!-- Exchange Rate Card -->
-    <div class="card card-full" id="rateCard">
+    <div class="card" id="rateCard">
       <div class="card-header">
         <h2><span class="card-icon">💱</span> 实时汇率</h2>
         <button class="btn btn-sm btn-outline" onclick="refreshRates()">🔄 自动获取</button>
@@ -477,25 +419,25 @@ body {
         <select id="convTo"></select>
         <span class="converter-result" id="convResult">--</span>
       </div>
+    </div>
 
-      <!-- Budget Section -->
-      <div class="budget-section">
-        <div class="budget-section-header">
-          <h3>🎯 月度预算 — <span id="budgetMonth"></span></h3>
-          <span style="display:flex;align-items:center;gap:6px">
-            <span id="budgetEditDisplay" style="font-weight:700;font-size:15px"></span>
-            <button class="btn btn-sm btn-outline" onclick="startEditBudget()" id="budgetEditBtn" style="font-size:11px;padding:3px 8px">✏️ 修改</button>
-            <span id="budgetEditForm" style="display:none;align-items:center;gap:6px">
-              <input type="number" id="budgetEditInput" min="0" step="100" placeholder="如 5000" style="width:100px;padding:6px 10px;border:1.5px solid var(--primary);border-radius:6px;font-size:14px">
-              <button class="btn btn-sm btn-primary" onclick="saveBudget()" style="font-size:12px;padding:4px 12px">💾</button>
-              <button class="btn btn-sm btn-outline" onclick="cancelEditBudget()" style="font-size:12px;padding:4px 12px">取消</button>
-            </span>
-          </span>
-        </div>
-        <div class="budget-text" id="budgetText"></div>
-        <div class="budget-bar-wrap"><div class="budget-bar" id="budgetBar" style="width:0%"></div></div>
-        <div class="budget-stats" id="budgetStats"></div>
-        <div class="budget-top3" id="budgetTop3"></div>
+    <!-- Budget Card -->
+    <div class="card" id="budgetCard">
+      <div class="card-header">
+        <h2><span class="card-icon">🎯</span> 月度预算</h2>
+        <span style="font-size:13px;color:var(--text-muted)" id="budgetMonth"></span>
+      </div>
+      <div class="budget-text" id="budgetText"></div>
+      <div class="budget-bar-wrap"><div class="budget-bar" id="budgetBar" style="width:0%"></div></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:10px">
+        <span style="font-size:13px;color:var(--text-secondary)" id="budgetEditLabel">预算额度：</span>
+        <span style="font-size:14px;font-weight:700;color:var(--text)" id="budgetEditDisplay"></span>
+        <button class="btn btn-sm btn-outline" onclick="startEditBudget()" style="font-size:11px;padding:3px 8px" id="budgetEditBtn">✏️ 修改</button>
+        <span id="budgetEditForm" style="display:none;align-items:center;gap:6px">
+          <input type="number" id="budgetEditInput" min="0" step="100" placeholder="如 5000" style="width:100px;padding:6px 10px;border:1.5px solid var(--primary);border-radius:6px;font-size:14px">
+          <button class="btn btn-sm btn-primary" onclick="saveBudget()" style="font-size:12px;padding:4px 12px">💾</button>
+          <button class="btn btn-sm btn-outline" onclick="cancelEditBudget()" style="font-size:12px;padding:4px 12px">取消</button>
+        </span>
       </div>
     </div>
 
@@ -505,27 +447,27 @@ body {
         <h2><span class="card-icon">✏️</span> 快速记账</h2>
       </div>
       <div class="quick-add-form">
-        <div class="fg fg-date">
+        <div class="fg">
           <label>📅 日期</label>
           <input type="date" id="addDate">
         </div>
-        <div class="fg fg-amount">
+        <div class="fg">
           <label>💵 金额</label>
-          <input type="number" id="addAmount" placeholder="0.00" min="0.01" max="99999999" step="0.01">
+          <input type="number" id="addAmount" placeholder="0.00" min="0.01" step="0.01">
         </div>
-        <div class="fg fg-currency">
+        <div class="fg">
           <label>💱 币种</label>
           <select id="addCurrency"></select>
         </div>
-        <div class="fg fg-payee">
-          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填，最多10字)</span></label>
-          <input type="text" id="addPayee" placeholder="买什么了？" maxlength="10">
+        <div class="fg">
+          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填)</span></label>
+          <input type="text" id="addPayee" placeholder="买什么了？（可不填）">
         </div>
-        <div class="fg fg-category">
+        <div class="fg">
           <label>📂 分类</label>
           <select id="addCategory" onchange="onCategoryChange()"></select>
         </div>
-        <div class="fg fg-subcat" id="subcatGroup" style="display:none">
+        <div class="fg" id="subcatGroup" style="display:none">
           <label>📁 子分类</label>
           <select id="addSubcategory"></select>
         </div>
@@ -619,7 +561,7 @@ body {
       <div class="card-header">
         <h2>📋 账单列表 <span id="baResultCount" style="font-weight:400;color:var(--text-secondary);font-size:14px"></span></h2>
         <div style="display:flex;gap:6px">
-          <select id="baSortBy" style="padding:6px 10px;border:1px solid var(--border);border-radius:0;font-size:13px;appearance:auto;-webkit-appearance:auto;color-scheme:light">
+          <select id="baSortBy" style="padding:6px 10px;border:1.5px solid var(--border);border-radius:6px;font-size:13px">
             <option value="date_desc">日期 ↓</option>
             <option value="date_asc">日期 ↑</option>
             <option value="amount_desc">金额 ↓</option>
@@ -702,14 +644,13 @@ const CURRENCY_EMOJI = {
 };
 const STORAGE_CURRENT = 'hku_ledger_current_user';
 const STORAGE_RATES = 'hku_ledger_rates';
-const STORAGE_DISPLAY_CURRENCIES = 'hku_ledger_display_currencies';
 const RATE_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 let rateRefreshTimer = null;
 
 // ==================== SUPABASE INIT ====================
 const SUPABASE_URL = 'https://mjyhbchaugjnxjpdksib.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1qeWhiY2hhdWdqbnhqcGRrc2liIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODU3NjM1MjksImV4cCI6MjEwMTMzOTUyOX0._FbBPFybO5eIpu-jkkWNLpolZxWLJ8gs2cvn76tFKJw';
-const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ==================== HELPERS ====================
 function $(id) { return document.getElementById(id); }
@@ -723,7 +664,7 @@ async function sha256(text) {
 }
 
 function generateId() {
-  return crypto.randomUUID();
+  return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
 }
 
 function formatCurrency(amount, currency) {
@@ -743,11 +684,11 @@ function getCurrentUser() { return localStorage.getItem(STORAGE_CURRENT); }
 function setCurrentUser(u) { localStorage.setItem(STORAGE_CURRENT, u); }
 
 async function getUserData() {
-  const { data: bills, error: billsErr } = await sb
+  const { data: bills, error: billsErr } = await supabase
     .from('bills').select('*').order('date', { ascending: false });
   if (billsErr) { console.error('Failed to load bills:', billsErr); return { bills: [], settings: getDefaultSettings() }; }
 
-  const { data: settingsRow, error: settingsErr } = await sb
+  const { data: settingsRow, error: settingsErr } = await supabase
     .from('user_settings').select('*').maybeSingle();
 
   let settings;
@@ -768,38 +709,23 @@ function getDefaultSettings() {
   return { defaultCurrency: 'HKD', monthlyBudget: 0, budgetCurrency: 'HKD', displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES] };
 }
 
-function getDisplayCurrencies() {
-  try {
-    const saved = localStorage.getItem(STORAGE_DISPLAY_CURRENCIES);
-    if (saved) { const arr = JSON.parse(saved); if (Array.isArray(arr) && arr.length > 0) return arr; }
-  } catch {}
-  return (currentSettings && currentSettings.displayCurrencies) || [...DEFAULT_DISPLAY_CURRENCIES];
-}
-
-function saveDisplayCurrencies(arr) {
-  try { localStorage.setItem(STORAGE_DISPLAY_CURRENCIES, JSON.stringify(arr)); } catch {}
-}
-
 async function saveBillToCloud(bill) {
-  const { data: { user } } = await sb.auth.getUser();
-  const { error } = await sb.from('bills').insert({
-    id: bill.id, user_id: user.id, date: bill.date, amount: bill.amount, currency: bill.currency,
+  const { error } = await supabase.from('bills').insert({
+    id: bill.id, date: bill.date, amount: bill.amount, currency: bill.currency,
     payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || ''
   });
-  if (error) { console.error('Save bill error:', error); toast('⚠️ 保存失败：' + error.message); return false; }
+  if (error) { console.error('Save bill error:', error); toast('⚠️ 保存失败，请重试'); return false; }
   return true;
 }
 
 async function deleteBillFromCloud(id) {
-  const { error } = await sb.from('bills').delete().eq('id', id);
+  const { error } = await supabase.from('bills').delete().eq('id', id);
   if (error) { console.error('Delete bill error:', error); toast('⚠️ 删除失败'); return false; }
   return true;
 }
 
 async function saveSettingsToCloud(settingsData) {
-  const { data: { user } } = await sb.auth.getUser();
-  const { error } = await sb.from('user_settings').upsert({
-    user_id: user.id,
+  const { error } = await supabase.from('user_settings').upsert({
     default_currency: settingsData.defaultCurrency,
     monthly_budget: settingsData.monthlyBudget,
     budget_currency: settingsData.budgetCurrency,
@@ -928,7 +854,7 @@ async function handleLogin() {
 
   if (!email || !pass) { errEl.textContent = '请填写邮箱和密码'; errEl.style.display = 'block'; return; }
 
-  const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+  const { data, error } = await supabase.auth.signInWithPassword({ email, password: pass });
   if (error) {
     if (error.message.includes('Invalid')) errEl.textContent = '邮箱或密码错误';
     else if (error.message.includes('Email not confirmed')) errEl.textContent = '请先验证邮箱';
@@ -954,7 +880,7 @@ async function handleRegister() {
   if (pass.length < 6) { errEl.textContent = '密码至少6位'; errEl.style.display = 'block'; return; }
   if (pass !== pass2) { errEl.textContent = '两次密码不一致'; errEl.style.display = 'block'; return; }
 
-  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  const { data, error } = await supabase.auth.signUp({ email, password: pass });
   if (error) {
     if (error.message.includes('already')) errEl.textContent = '该邮箱已被注册';
     else errEl.textContent = '注册失败：' + error.message;
@@ -979,7 +905,7 @@ async function handleRegister() {
 
 async function handleLogout() {
   if (rateRefreshTimer) { clearInterval(rateRefreshTimer); rateRefreshTimer = null; }
-  await sb.auth.signOut();
+  await supabase.auth.signOut();
   localStorage.removeItem(STORAGE_CURRENT);
   hide($('dashboard'));
   show($('authPage'));
@@ -1008,6 +934,7 @@ async function showDashboard() {
 
   // Load rates
   rateData = await fetchRates();
+  updateRateUI();
 
   // Auto-refresh rates every 5 min
   if (rateRefreshTimer) clearInterval(rateRefreshTimer);
@@ -1021,11 +948,6 @@ async function showDashboard() {
   // Load user data from cloud
   const userData = await getUserData();
   currentSettings = userData.settings;
-  // Seed localStorage from cloud if not already set
-  if (!localStorage.getItem(STORAGE_DISPLAY_CURRENCIES)) {
-    saveDisplayCurrencies(currentSettings.displayCurrencies);
-  }
-  updateRateUI();
 
   // Setup form defaults
   $('addDate').value = new Date().toISOString().slice(0, 10);
@@ -1069,7 +991,7 @@ async function refreshAll() {
   $('navMonthTotal').textContent = formatCurrency(monthTotal, settings.budgetCurrency);
 
   // Budget
-  updateBudgetUI(monthTotal, settings, monthBills);
+  updateBudgetUI(monthTotal, settings);
   $('budgetMonth').textContent = `${now.getFullYear()}年${now.getMonth()+1}月`;
 
   // Chart
@@ -1088,7 +1010,7 @@ function updateRateUI() {
   }
 
   const baseCurrency = 'CNY';
-  const displayCurrencies = getDisplayCurrencies();
+  const displayCurrencies = (currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES;
   let html = '';
   for (const c of displayCurrencies) {
     if (c === baseCurrency || !rateData.rates[c]) continue;
@@ -1155,7 +1077,7 @@ function toggleCurrencyPicker() {
 }
 
 function updateCurrencyToggles() {
-  const selected = getDisplayCurrencies();
+  const selected = (currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES;
   let html = '';
   for (const c of CURRENCIES) {
     if (c === 'CNY') continue;
@@ -1175,14 +1097,11 @@ async function toggleCurrency(currency, show) {
   } else {
     currentSettings.displayCurrencies = currentSettings.displayCurrencies.filter(c => c !== currency);
   }
-  saveDisplayCurrencies(currentSettings.displayCurrencies);
-  if (!(await saveSettingsToCloud(currentSettings))) {
-    toast('⚠️ 云同步失败，偏好已本地保存');
-  }
+  await saveSettingsToCloud(currentSettings);
   updateRateUI();
 }
 
-function updateBudgetUI(monthTotal, settings, monthBills) {
+function updateBudgetUI(monthTotal, settings) {
   const budget = settings.monthlyBudget || 0;
   const currency = settings.budgetCurrency;
   const bar = $('budgetBar');
@@ -1191,6 +1110,7 @@ function updateBudgetUI(monthTotal, settings, monthBills) {
     bar.style.width = '0%';
     bar.style.background = 'var(--border)';
     $('budgetEditDisplay').textContent = '未设置';
+    $('budgetEditLabel').textContent = '预算额度：';
   } else {
     const pct = Math.min(monthTotal / budget * 100, 100);
     $('budgetText').textContent = `已花 ${formatCurrency(monthTotal, currency)} / 预算 ${formatCurrency(budget, currency)}`;
@@ -1199,73 +1119,8 @@ function updateBudgetUI(monthTotal, settings, monthBills) {
     else if (pct > 70) bar.style.background = 'var(--warning)';
     else bar.style.background = 'var(--primary)';
     $('budgetEditDisplay').textContent = formatCurrency(budget, currency);
+    $('budgetEditLabel').textContent = '预算额度：';
   }
-
-  // Stats: remaining, daily budget, days remaining
-  updateBudgetStats(monthTotal, budget, currency);
-
-  // Top 3 categories
-  updateBudgetTop3(currency, monthBills);
-}
-
-function updateBudgetStats(monthTotal, budget, currency) {
-  const now = new Date();
-  const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-  const today = now.getDate();
-  const daysRemaining = daysInMonth - today + 1; // include today
-
-  let remainingHTML, dailyHTML;
-  if (budget > 0) {
-    const remaining = budget - monthTotal;
-    const dailyAvailable = remaining / Math.max(daysRemaining, 1);
-    remainingHTML = `<div class="budget-stat-value${remaining < 0 ? ' danger' : ''}">${formatCurrency(remaining, currency)}</div>`;
-    dailyHTML = `<div class="budget-stat-value${dailyAvailable < 0 ? ' danger' : ''}">${formatCurrency(dailyAvailable, currency)}</div>`;
-  } else {
-    remainingHTML = '<div class="budget-stat-value" style="color:var(--text-muted)">—</div>';
-    dailyHTML = '<div class="budget-stat-value" style="color:var(--text-muted)">—</div>';
-  }
-  const daysHTML = `<div class="budget-stat-value">${daysRemaining}天</div>`;
-
-  $('budgetStats').innerHTML = `
-    <div class="budget-stat-item">
-      ${remainingHTML}
-      <div class="budget-stat-label">剩余预算</div>
-    </div>
-    <div class="budget-stat-item">
-      ${dailyHTML}
-      <div class="budget-stat-label">日均可用</div>
-    </div>
-    <div class="budget-stat-item">
-      ${daysHTML}
-      <div class="budget-stat-label">距月末</div>
-    </div>
-  `;
-}
-
-function updateBudgetTop3(currency, monthBills) {
-  const catTotals = {};
-  for (const b of monthBills) {
-    const cat = CATEGORIES.find(c => c.label === b.category);
-    if (!cat) continue;
-    const key = cat.key;
-    catTotals[key] = (catTotals[key] || 0) + convert(b.amount, b.currency, currency, rateData);
-  }
-  // Sort and take top 3
-  const sorted = Object.entries(catTotals)
-    .filter(([, v]) => v > 0)
-    .sort(([, a], [, b]) => b - a)
-    .slice(0, 3);
-
-  if (sorted.length === 0) {
-    $('budgetTop3').innerHTML = '<span style="color:var(--text-muted)">📊 本月暂无支出</span>';
-    return;
-  }
-
-  $('budgetTop3').innerHTML = '<span style="margin-right:8px;font-weight:600">📊 本月TOP3</span>' +
-    sorted.map(([key, amount]) => {
-      const cat = CATEGORIES.find(c => c.key === key);
-      return `<span class="budget-top3-item">${cat ? cat.emoji : ''} ${cat ? cat.label : key} <b>${formatCurrency(amount, currency)}</b></span>`;
-    }).join('');
 }
 
 function startEditBudget() {
@@ -1492,8 +1347,6 @@ async function addBill() {
   // Validation
   if (!date) { toast('⚠️ 请选择日期'); return; }
   if (!amountStr || parseFloat(amountStr) <= 0) { toast('⚠️ 请输入有效金额'); return; }
-  if (parseFloat(amountStr) > 99999999) { toast('⚠️ 金额不能超过 99,999,999'); return; }
-  if (payee.length > 10) { toast('⚠️ 用途不能超过10个字符'); return; }
   if (!category) { toast('⚠️ 请选择分类'); return; }
 
   // Check if subcategory required
@@ -1564,7 +1417,7 @@ async function saveSettings() {
   // Handle email change
   if (newEmail && newEmail !== currentUser) {
     if (!newEmail.includes('@')) { errEl.textContent = '请输入有效的邮箱地址'; errEl.style.display = 'block'; return; }
-    const { error } = await sb.auth.updateUser({ email: newEmail });
+    const { error } = await supabase.auth.updateUser({ email: newEmail });
     if (error) { errEl.textContent = '邮箱修改失败：' + error.message; errEl.style.display = 'block'; return; }
     setCurrentUser(newEmail);
     currentUser = newEmail;
@@ -1575,7 +1428,7 @@ async function saveSettings() {
   if (newPass) {
     if (newPass.length < 6) { errEl.textContent = '新密码至少6位'; errEl.style.display = 'block'; return; }
     if (newPass !== newPass2) { errEl.textContent = '两次新密码不一致'; errEl.style.display = 'block'; return; }
-    const { error } = await sb.auth.updateUser({ password: newPass });
+    const { error } = await supabase.auth.updateUser({ password: newPass });
     if (error) { errEl.textContent = '密码修改失败：' + error.message; errEl.style.display = 'block'; return; }
   }
 
@@ -1802,7 +1655,7 @@ function debounce(fn, delay) {
 // ==================== INIT ====================
 async function init() {
   // Check Supabase session first
-  const { data: { session } } = await sb.auth.getSession();
+  const { data: { session } } = await supabase.auth.getSession();
 
   // Route: ?view=bills → bill analysis page
   if (window.location.search.includes('view=bills')) {
