@@ -482,15 +482,15 @@ body {
         </div>
         <div class="fg fg-amount">
           <label>💵 金额</label>
-          <input type="number" id="addAmount" placeholder="0.00" min="0.01" step="0.01">
+          <input type="number" id="addAmount" placeholder="0.00" min="0.01" max="99999999" step="0.01">
         </div>
         <div class="fg fg-currency">
           <label>💱 币种</label>
           <select id="addCurrency"></select>
         </div>
         <div class="fg fg-payee">
-          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填)</span></label>
-          <input type="text" id="addPayee" placeholder="买什么了？（可不填）">
+          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填，最多10字)</span></label>
+          <input type="text" id="addPayee" placeholder="买什么了？" maxlength="10">
         </div>
         <div class="fg fg-category">
           <label>📂 分类</label>
@@ -1377,6 +1377,8 @@ async function addBill() {
   // Validation
   if (!date) { toast('⚠️ 请选择日期'); return; }
   if (!amountStr || parseFloat(amountStr) <= 0) { toast('⚠️ 请输入有效金额'); return; }
+  if (parseFloat(amountStr) > 99999999) { toast('⚠️ 金额不能超过 99,999,999'); return; }
+  if (payee.length > 10) { toast('⚠️ 用途不能超过10个字符'); return; }
   if (!category) { toast('⚠️ 请选择分类'); return; }
 
   // Check if subcategory required
