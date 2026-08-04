@@ -673,6 +673,7 @@ const CURRENCY_EMOJI = {
 };
 const STORAGE_CURRENT = 'hku_ledger_current_user';
 const STORAGE_RATES = 'hku_ledger_rates';
+const STORAGE_DISPLAY_CURRENCIES = 'hku_ledger_display_currencies';
 const RATE_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 let rateRefreshTimer = null;
 
@@ -736,6 +737,18 @@ async function getUserData() {
 
 function getDefaultSettings() {
   return { defaultCurrency: 'HKD', monthlyBudget: 0, budgetCurrency: 'HKD', displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES] };
+}
+
+function getDisplayCurrencies() {
+  try {
+    const saved = localStorage.getItem(STORAGE_DISPLAY_CURRENCIES);
+    if (saved) { const arr = JSON.parse(saved); if (Array.isArray(arr) && arr.length > 0) return arr; }
+  } catch {}
+  return (currentSettings && currentSettings.displayCurrencies) || [...DEFAULT_DISPLAY_CURRENCIES];
+}
+
+function saveDisplayCurrencies(arr) {
+  try { localStorage.setItem(STORAGE_DISPLAY_CURRENCIES, JSON.stringify(arr)); } catch {}
 }
 
 async function saveBillToCloud(bill) {
@@ -979,6 +992,10 @@ async function showDashboard() {
   // Load user data from cloud
   const userData = await getUserData();
   currentSettings = userData.settings;
+  // Seed localStorage from cloud if not already set
+  if (!localStorage.getItem(STORAGE_DISPLAY_CURRENCIES)) {
+    saveDisplayCurrencies(currentSettings.displayCurrencies);
+  }
   updateRateUI();
 
   // Setup form defaults
@@ -1042,7 +1059,7 @@ function updateRateUI() {
   }
 
   const baseCurrency = 'CNY';
-  const displayCurrencies = (currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES;
+  const displayCurrencies = getDisplayCurrencies();
   let html = '';
   for (const c of displayCurrencies) {
     if (c === baseCurrency || !rateData.rates[c]) continue;
@@ -1109,7 +1126,7 @@ function toggleCurrencyPicker() {
 }
 
 function updateCurrencyToggles() {
-  const selected = (currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES;
+  const selected = getDisplayCurrencies();
   let html = '';
   for (const c of CURRENCIES) {
     if (c === 'CNY') continue;
@@ -1123,17 +1140,15 @@ function updateCurrencyToggles() {
 }
 
 async function toggleCurrency(currency, show) {
-  const prev = [...((currentSettings && currentSettings.displayCurrencies) || DEFAULT_DISPLAY_CURRENCIES)];
   if (!currentSettings.displayCurrencies) currentSettings.displayCurrencies = [...DEFAULT_DISPLAY_CURRENCIES];
   if (show) {
     if (!currentSettings.displayCurrencies.includes(currency)) currentSettings.displayCurrencies.push(currency);
   } else {
     currentSettings.displayCurrencies = currentSettings.displayCurrencies.filter(c => c !== currency);
   }
+  saveDisplayCurrencies(currentSettings.displayCurrencies);
   if (!(await saveSettingsToCloud(currentSettings))) {
-    currentSettings.displayCurrencies = prev;
-    toast('⚠️ 保存失败，请重试');
-    return;
+    toast('⚠️ 云同步失败，偏好已本地保存');
   }
   updateRateUI();
 }
