@@ -739,11 +739,12 @@ function getDefaultSettings() {
 }
 
 async function saveBillToCloud(bill) {
+  const { data: { user } } = await sb.auth.getUser();
   const { error } = await sb.from('bills').insert({
-    id: bill.id, date: bill.date, amount: bill.amount, currency: bill.currency,
+    id: bill.id, user_id: user.id, date: bill.date, amount: bill.amount, currency: bill.currency,
     payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || ''
   });
-  if (error) { console.error('Save bill error:', error); toast('⚠️ 保存失败，请重试'); return false; }
+  if (error) { console.error('Save bill error:', error); toast('⚠️ 保存失败：' + error.message); return false; }
   return true;
 }
 
