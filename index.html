@@ -180,7 +180,7 @@ body {
 
 /* Quick Add Card */
 .quick-add-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-end; }
-.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; min-width: 90px; }
+.quick-add-form .fg { display: flex; flex-direction: column; gap: 4px; min-width: 90px; position: relative; z-index: 1; }
 .quick-add-form .fg label { font-size: 12px; font-weight: 600; color: var(--text-secondary); white-space: nowrap; }
 .quick-add-form .fg input {
   padding: 9px 12px; border: 1px solid var(--border); width: 100%; box-sizing: border-box;
@@ -189,11 +189,17 @@ body {
 .quick-add-form .fg select {
   padding: 9px 12px; width: 100%; box-sizing: border-box;
   font-size: 14px;
-}
-.quick-add-form .fg input:focus {
-  outline: none; border-color: var(--primary);
+  border: 1px solid #D1D5DB; border-radius: 6px;
+  background: #FFFFFF; color: #111827;
+  appearance: auto; -webkit-appearance: auto;
+  color-scheme: light;
+  cursor: pointer;
 }
 .quick-add-form .fg select:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-light);
+}
+.quick-add-form .fg input:focus {
   outline: none; border-color: var(--primary);
 }
 .quick-add-form .fg.fg-date { flex: 0 0 140px; }
@@ -707,11 +713,11 @@ function getCurrentUser() { return localStorage.getItem(STORAGE_CURRENT); }
 function setCurrentUser(u) { localStorage.setItem(STORAGE_CURRENT, u); }
 
 async function getUserData() {
-  const { data: bills, error: billsErr } = await supabase
+  const { data: bills, error: billsErr } = await sb
     .from('bills').select('*').order('date', { ascending: false });
   if (billsErr) { console.error('Failed to load bills:', billsErr); return { bills: [], settings: getDefaultSettings() }; }
 
-  const { data: settingsRow, error: settingsErr } = await supabase
+  const { data: settingsRow, error: settingsErr } = await sb
     .from('user_settings').select('*').maybeSingle();
 
   let settings;
