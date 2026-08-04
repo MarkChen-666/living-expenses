@@ -964,7 +964,6 @@ async function showDashboard() {
 
   // Load rates
   rateData = await fetchRates();
-  updateRateUI();
 
   // Auto-refresh rates every 5 min
   if (rateRefreshTimer) clearInterval(rateRefreshTimer);
@@ -978,6 +977,7 @@ async function showDashboard() {
   // Load user data from cloud
   const userData = await getUserData();
   currentSettings = userData.settings;
+  updateRateUI();
 
   // Setup form defaults
   $('addDate').value = new Date().toISOString().slice(0, 10);
