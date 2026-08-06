@@ -519,8 +519,8 @@ body {
           <select id="addCurrency"></select>
         </div>
         <div class="fg fg-payee">
-          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填，最多10字)</span></label>
-          <input type="text" id="addPayee" placeholder="买什么了？" maxlength="10">
+          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填，中文≤10字，英文≤30字符)</span></label>
+          <input type="text" id="addPayee" placeholder="买什么了？" maxlength="30">
         </div>
         <div class="fg fg-category">
           <label>📂 分类</label>
@@ -1494,7 +1494,12 @@ async function addBill() {
   if (!date) { toast('⚠️ 请选择日期'); return; }
   if (!amountStr || parseFloat(amountStr) < 0.01) { toast('⚠️ 金额不能小于 0.01'); return; }
   if (parseFloat(amountStr) > 99999999) { toast('⚠️ 金额不能超过 99,999,999'); return; }
-  if (payee.length > 10) { toast('⚠️ 用途不能超过10个字符'); return; }
+  // Payee length: 中文按1字1权重，英文/数字/符号按3字符1权重，上限10权重（即10个汉字或30个英文字符）
+  let payeeWeight = 0;
+  for (const ch of payee) {
+    payeeWeight += /[㐀-鿿豈-﫿]/.test(ch) ? 1 : 1 / 3;
+  }
+  if (payeeWeight > 10) { toast('⚠️ 用途最多10个汉字或30个英文字符'); return; }
   if (!category) { toast('⚠️ 请选择分类'); return; }
 
   // Check if subcategory required
