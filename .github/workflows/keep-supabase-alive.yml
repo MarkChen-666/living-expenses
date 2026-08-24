@@ -1,0 +1,26 @@
+name: Keep Supabase Alive
+
+# 防止 Supabase 免费项目因连续 7 天无请求被自动暂停（pause）。
+# 每天定时请求一次项目 API，任何 HTTP 响应码都算项目活跃。
+# 只有完全连接失败（DNS 解析失败 / 超时，curl 返回 000）才视为项目暂停。
+
+on:
+  schedule:
+    # 每天 06:17 UTC = 香港时间 14:17（避开整点，减轻服务器压力）
+    - cron: '17 6 * * *'
+  workflow_dispatch: # 支持在 Actions 页面手动触发
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Supabase project
+        run: |
+          URL="https://mjyhbchaugjnxjpdksib.supabase.co/auth/v1/health"
+          code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 30 "$URL")
+          echo "HTTP $code"
+          if [ "$code" = "000" ]; then
+            echo "❌ Supabase 项目不可达 —— 可能已被暂停，请到 supabase.com/dashboard 恢复！"
+            exit 1
+          fi
+          echo "✅ Supabase 项目在线（HTTP $code 说明服务有响应）"
