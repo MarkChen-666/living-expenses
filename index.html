@@ -1215,15 +1215,14 @@ function updateBudgetStats(monthTotal, budget, currency) {
   const today = now.getDate();
   const daysRemaining = daysInMonth - today + 1; // include today
 
-  let remainingHTML, dailyHTML;
+  let remainingHTML, spentHTML;
   if (budget > 0) {
     const remaining = budget - monthTotal;
-    const dailyAvailable = remaining / Math.max(daysRemaining, 1);
     remainingHTML = `<div class="budget-stat-value${remaining < 0 ? ' danger' : ''}">${formatCurrency(remaining, currency)}</div>`;
-    dailyHTML = `<div class="budget-stat-value${dailyAvailable < 0 ? ' danger' : ''}">${formatCurrency(dailyAvailable, currency)}</div>`;
+    spentHTML = `<div class="budget-stat-value">${formatCurrency(monthTotal, currency)}</div>`;
   } else {
     remainingHTML = '<div class="budget-stat-value" style="color:var(--text-muted)">—</div>';
-    dailyHTML = '<div class="budget-stat-value" style="color:var(--text-muted)">—</div>';
+    spentHTML = `<div class="budget-stat-value">${formatCurrency(monthTotal, currency)}</div>`;
   }
   const daysHTML = `<div class="budget-stat-value">${daysRemaining}天</div>`;
 
@@ -1233,8 +1232,8 @@ function updateBudgetStats(monthTotal, budget, currency) {
       <div class="budget-stat-label">剩余预算</div>
     </div>
     <div class="budget-stat-item">
-      ${dailyHTML}
-      <div class="budget-stat-label">日均可用</div>
+      ${spentHTML}
+      <div class="budget-stat-label">本月已花</div>
     </div>
     <div class="budget-stat-item">
       ${daysHTML}
