@@ -254,6 +254,11 @@ body {
 }
 .legend-left { display: flex; align-items: center; flex: 1; min-width: 0; }
 .legend-right { white-space: nowrap; text-align: left; }
+.legend-dot-square { border-radius: 3px; }
+.legend-section-title {
+  font-size: 12px; font-weight: 700; color: var(--text-muted);
+  padding: 8px 0 2px; letter-spacing: .5px;
+}
 
 /* Bill List Card */
 .bill-header-row {
@@ -675,20 +680,58 @@ body {
 
 <script>
 // ==================== CONSTANTS ====================
+// group: 'essential'（必要）| 'nonessential'（非必要）；子分类无 group 时继承一级分类
 const CATEGORIES = [
-  { key: 'essentials',    label: '生活必需',        emoji: '🏠', color: '#EF4444', sub: null },
-  { key: 'quality_of_life', label: '提升生活品质',  emoji: '🛍️', color: '#8B5CF6', sub: null },
-  { key: 'dining',        label: '餐饮',            emoji: '🍜', color: '#F59E0B', sub: null },
-  { key: 'transport',     label: '交通',            emoji: '🚇', color: '#06B6D4', sub: null },
-  { key: 'online_services', label: '线上服务',      emoji: '💻', color: '#EC4899',
+  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#06B6D4', group: 'essential', sub: null },
+  { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#8B5CF6', group: 'nonessential',
     sub: [
-      { key: 'gaming', label: '游戏', color: '#BE185D' },
-      { key: 'software', label: '软件会员', color: '#EC4899' },
-      { key: 'other_online', label: '其他付费', color: '#F9A8D4' },
+      { key: 'consumables',       label: '消耗品',       color: '#14B8A6', group: 'essential' },
+      { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#8B5CF6', group: 'nonessential' },
     ]},
-  { key: 'entertainment', label: '玩乐',            emoji: '🎮', color: '#10B981', sub: null },
-  { key: 'misc',          label: '杂项',            emoji: '📦', color: '#78716C', sub: null },
+  { key: 'online_consumption', label: '线上消费', emoji: '💻', color: '#EC4899', group: 'nonessential',
+    sub: [
+      { key: 'software', label: '软件会员', color: '#F472B6' },
+      { key: 'gaming',   label: '游戏',     color: '#BE185D' },
+      { key: 'other',    label: '其他',     color: '#F9A8D4' },
+    ]},
+  { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#10B981', group: 'nonessential', sub: null },
+  { key: 'misc',          label: '杂项', emoji: '📦', color: '#78716C', group: 'nonessential', sub: null },
 ];
+
+const GROUP_COLORS = { essential: '#16A34A', nonessential: '#F59E0B' };
+
+// ==================== LEGACY CATEGORY MAPPING ====================
+// 旧分类 label → 新分类（仅显示层映射，数据库数据不动）
+const LEGACY_CATEGORY_MAP = {
+  '餐饮':         { category: '八达通' },
+  '交通':         { category: '八达通' },
+  '生活必需':     { category: '杂项' },
+  '提升生活品质': { category: '网购', sub: '提升生活质量' },
+  '线上服务':     { category: '线上消费', subMap: { '游戏': '游戏', '软件会员': '软件会员', '其他付费': '其他' } },
+  '玩乐':         { category: '玩乐' },
+  '杂项':         { category: '杂项' },
+};
+
+// 返回 { category, subcategory, cat, sub }
+// cat: CATEGORIES 中的一级分类对象或 null；sub: 命中的子分类对象或 null
+function resolveCategory(bill) {
+  const entry = LEGACY_CATEGORY_MAP[bill.category];
+  let category = bill.category;
+  let subcategory = bill.subcategory || '';
+  if (entry) {
+    category = entry.category;
+    if (entry.sub) subcategory = entry.sub;
+    else if (entry.subMap && entry.subMap[subcategory]) subcategory = entry.subMap[subcategory];
+  }
+  const cat = CATEGORIES.find(c => c.label === category) || null;
+  const sub = cat && cat.sub ? cat.sub.find(s => s.label === subcategory) || null : null;
+  return { category, subcategory, cat, sub };
+}
+
+// 子分类有 group 用之，否则继承一级分类，再兜底 nonessential
+function resolveGroup(res) {
+  return (res.sub && res.sub.group) || (res.cat && res.cat.group) || 'nonessential';
+}
 const CURRENCIES = ['HKD','CNY','USD','EUR','GBP','JPY','KRW','AUD','CAD','CHF','SGD','SEK','NZD','THB','MYR'];
 const DEFAULT_DISPLAY_CURRENCIES = ['HKD','USD','EUR','GBP'];
 const CURRENCY_LABELS = {
@@ -1245,7 +1288,8 @@ function updateBudgetStats(monthTotal, budget, currency) {
 function updateBudgetTop3(currency, monthBills) {
   const catTotals = {};
   for (const b of monthBills) {
-    const cat = CATEGORIES.find(c => c.label === b.category);
+    const res = resolveCategory(b);
+    const cat = res.cat;
     if (!cat) continue;
     const key = cat.key;
     catTotals[key] = (catTotals[key] || 0) + convert(b.amount, b.currency, currency, rateData);
@@ -1303,17 +1347,17 @@ function updateChart(monthBills, settings) {
     totals[cat.key] = 0;
   }
 
+  let essentialTotal = 0, nonessentialTotal = 0;
   for (const b of monthBills) {
-    const cat = CATEGORIES.find(c => c.label === b.category);
-    if (!cat) continue;
-    if (cat.sub && b.subcategory) {
-      const sub = cat.sub.find(s => s.label === b.subcategory);
-      if (sub) {
-        totals[cat.key + '_' + sub.key] += convert(b.amount, b.currency, settings.budgetCurrency, rateData);
-        continue;
-      }
+    const res = resolveCategory(b);
+    if (!res.cat) continue;
+    const amt = convert(b.amount, b.currency, settings.budgetCurrency, rateData);
+    if (res.cat.sub && res.sub) {
+      totals[res.cat.key + '_' + res.sub.key] += amt;
+    } else {
+      totals[res.cat.key] += amt;
     }
-    totals[cat.key] += convert(b.amount, b.currency, settings.budgetCurrency, rateData);
+    if (resolveGroup(res) === 'essential') essentialTotal += amt; else nonessentialTotal += amt;
   }
 
   // Build items array: split subcategories into individual entries
@@ -1347,34 +1391,35 @@ function updateChart(monthBills, settings) {
   // If Chart.js not loaded yet, show text summary and retry
   if (typeof Chart === 'undefined') {
     // Show legend only, skip chart
-    let legendHTML = '';
-    for (const item of items) {
-      const pct = total > 0 ? (totals[item.key] / total * 100).toFixed(1) : 0;
-      legendHTML += `
-        <div class="category-legend-item">
-          <span class="legend-left"><span class="legend-dot" style="background:${item.color}"></span>${item.emoji} ${item.label}</span>
-          <span class="legend-right">${formatCurrency(totals[item.key], settings.budgetCurrency)} (${pct}%)</span>
-        </div>`;
-    }
-    $('categoryLegend').innerHTML = legendHTML;
+    $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
     // Retry chart loading
     loadChartJs().then(ok => { if (ok) refreshAll(); });
     return;
   }
 
-  // Doughnut chart
+  // Doughnut chart — 内环：必要 vs 非必要；外环：分类明细
   const ctx = $('categoryChart').getContext('2d');
   chartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      labels: items.map(c => c.emoji + ' ' + c.label),
-      datasets: [{
-        data: items.map(c => totals[c.key]),
-        backgroundColor: items.map(c => c.color),
-        borderColor: '#fff',
-        borderWidth: 2,
-        hoverBorderWidth: 3,
-      }]
+      // labels 顺序必须与 dataset 切片顺序一致：内环两片在前，外环明细在后
+      labels: ['必要消费', '非必要消费', ...items.map(c => c.emoji + ' ' + c.label)],
+      datasets: [
+        {
+          data: [essentialTotal, nonessentialTotal],
+          backgroundColor: [GROUP_COLORS.essential, GROUP_COLORS.nonessential],
+          borderColor: '#fff',
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+        },
+        {
+          data: items.map(c => totals[c.key]),
+          backgroundColor: items.map(c => c.color),
+          borderColor: '#fff',
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -1395,16 +1440,29 @@ function updateChart(monthBills, settings) {
   });
 
   // Legend
-  let legendHTML = '';
+  $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
+}
+
+// 图例：必要/非必要分组段（方点）+ 分类明细段（圆点），Chart.js 未加载时也走此函数
+function buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, currency) {
+  const pctOf = v => total > 0 ? (v / total * 100).toFixed(1) : 0;
+  const groupRow = (label, val, color) => `
+    <div class="category-legend-item">
+      <span class="legend-left"><span class="legend-dot legend-dot-square" style="background:${color}"></span>${label}</span>
+      <span class="legend-right">${formatCurrency(val, currency)} (${pctOf(val)}%)</span>
+    </div>`;
+  let html = '<div class="legend-section-title">必要 vs 非必要</div>';
+  html += groupRow('必要消费', essentialTotal, GROUP_COLORS.essential);
+  html += groupRow('非必要消费', nonessentialTotal, GROUP_COLORS.nonessential);
+  html += '<div class="legend-section-title">分类明细</div>';
   for (const item of items) {
-    const pct = total > 0 ? (totals[item.key] / total * 100).toFixed(1) : 0;
-    legendHTML += `
+    html += `
       <div class="category-legend-item">
         <span class="legend-left"><span class="legend-dot" style="background:${item.color}"></span>${item.emoji} ${item.label}</span>
-        <span class="legend-right">${formatCurrency(totals[item.key], settings.budgetCurrency)} (${pct}%)</span>
+        <span class="legend-right">${formatCurrency(totals[item.key], currency)} (${pctOf(totals[item.key])}%)</span>
       </div>`;
   }
-  $('categoryLegend').innerHTML = legendHTML;
+  return html;
 }
 
 function updateBillList(bills, settings) {
@@ -1422,19 +1480,17 @@ function updateBillList(bills, settings) {
 
   let html = '';
   for (const b of sorted) {
-    const cat = CATEGORIES.find(c => c.label === b.category) || {};
+    const res = resolveCategory(b);
+    const cat = res.cat || {};
     let dotColor = cat.color || '#9CA3AF';
-    if (cat.sub && b.subcategory) {
-      const sub = cat.sub.find(s => s.label === b.subcategory);
-      if (sub && sub.color) dotColor = sub.color;
-    }
+    if (res.sub && res.sub.color) dotColor = res.sub.color;
     const converted = convert(b.amount, b.currency, settings.budgetCurrency, rateData);
     html += `
       <div class="bill-item">
         <div class="bill-left">
           <span class="bill-cat-dot" style="background:${dotColor}"></span>
           <div class="bill-info">
-            <div class="bill-payee">${cat.emoji || ''} ${b.category}${b.subcategory ? ' › ' + b.subcategory : ''}</div>
+            <div class="bill-payee">${cat.emoji || ''} ${res.category}${res.subcategory ? ' › ' + res.subcategory : ''}</div>
             <div class="bill-meta">${b.date}${b.payee ? ' · ' + escHtml(b.payee) : ''}</div>
           </div>
         </div>
@@ -1611,9 +1667,11 @@ function onCategoryChange() {
   const subcatSelect = $('addSubcategory');
   if (catObj && catObj.sub) {
     subcatGroup.style.display = '';
+    // 优先默认选中 key 为 other 的兜底子分类（如线上消费→其他），否则选中第一个
+    const defaultSub = catObj.sub.find(s => s.key === 'other') || catObj.sub[0];
     let html = '';
     for (const s of catObj.sub) {
-      html += `<option value="${s.label}" ${s.key === 'other_online' ? 'selected' : ''}>${s.label}</option>`;
+      html += `<option value="${s.label}" ${s.key === defaultSub.key ? 'selected' : ''}>${s.label}</option>`;
     }
     subcatSelect.innerHTML = html;
   } else {
@@ -1699,9 +1757,12 @@ async function getFilteredBills() {
   if (category) {
     if (category.includes(' › ')) {
       const parts = category.split(' › ');
-      bills = bills.filter(b => b.category === parts[0] && b.subcategory === parts[1]);
+      bills = bills.filter(b => {
+        const r = resolveCategory(b);
+        return r.category === parts[0] && r.subcategory === parts[1];
+      });
     } else {
-      bills = bills.filter(b => b.category === category);
+      bills = bills.filter(b => resolveCategory(b).category === category);
     }
   }
   if (currency) bills = bills.filter(b => b.currency === currency);
@@ -1761,14 +1822,15 @@ async function renderBillAnalysis() {
 
   let rows = '';
   for (const b of bills) {
-    const cat = CATEGORIES.find(c => c.label === b.category) || {};
+    const res = resolveCategory(b);
+    const cat = res.cat || {};
     const converted = convert(b.amount, b.currency, currency, rateData);
     rows += `<tr>
       <td>${b.date}</td>
       <td>${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
       <td>${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
       <td>${escHtml(b.payee || '（未填写）')}</td>
-      <td>${cat.emoji||''} ${b.category}${b.subcategory?' › '+b.subcategory:''}</td>
+      <td>${cat.emoji||''} ${res.category}${res.subcategory?' › '+res.subcategory:''}</td>
       <td><button class="ba-del-btn" onclick="deleteBillFromAnalysis('${b.id}')" title="删除">🗑️</button></td>
     </tr>`;
   }
