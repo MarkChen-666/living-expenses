@@ -681,24 +681,25 @@ body {
 <script>
 // ==================== CONSTANTS ====================
 // group: 'essential'（必要）| 'nonessential'（非必要）；子分类无 group 时继承一级分类
+// 颜色体系：中环（一级分类）各用独立色系；外环（子分类）同所属大类色系、用深浅区分
 const CATEGORIES = [
   { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#06B6D4', group: 'essential', hint: '餐饮·交通', sub: null },
   { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#8B5CF6', group: 'nonessential',
     sub: [
-      { key: 'consumables',       label: '消耗品',       color: '#14B8A6', group: 'essential' },
-      { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#8B5CF6', group: 'nonessential' },
+      { key: 'consumables',       label: '消耗品',       color: '#6D28D9', group: 'essential' },
+      { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#A78BFA', group: 'nonessential' },
     ]},
   { key: 'online_consumption', label: '线上消费', emoji: '💻', color: '#EC4899', group: 'nonessential',
     sub: [
       { key: 'software', label: '软件会员', color: '#F472B6' },
-      { key: 'gaming',   label: '游戏',     color: '#BE185D' },
+      { key: 'gaming',   label: '游戏',     color: '#DB2777' },
       { key: 'other',    label: '其他',     color: '#F9A8D4' },
     ]},
   { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#10B981', group: 'nonessential', sub: null },
   { key: 'misc',          label: '杂项', emoji: '📦', color: '#78716C', group: 'nonessential', sub: null },
 ];
 
-const GROUP_COLORS = { essential: '#16A34A', nonessential: '#F59E0B' };
+const GROUP_COLORS = { essential: '#2563EB', nonessential: '#F97316' };
 
 // ==================== LEGACY CATEGORY MAPPING ====================
 // 旧分类 label → 新分类（仅显示层映射，数据库数据不动）
@@ -1435,8 +1436,15 @@ function updateChart(monthBills, settings) {
         tooltip: {
           callbacks: {
             label: function(ctx) {
+              // 各层名称按 datasetIndex 映射（Chart.js 多 doughnut 的 ctx.label 不按 dataset 偏移）
+              const layerNames = [
+                ['必要消费', '非必要消费'],                 // dataset 0：内环
+                items.map(c => c.emoji + ' ' + c.label),    // dataset 1：中环一级分类
+                subItems.map(c => c.emoji + ' ' + c.label)  // dataset 2：外环子分类
+              ][ctx.datasetIndex];
+              const name = (layerNames && layerNames[ctx.dataIndex]) || '';
               const pct = total > 0 ? (ctx.raw / total * 100).toFixed(1) : 0;
-              return ' ' + ctx.label + ': ' + formatCurrency(ctx.raw, settings.budgetCurrency) + '  (' + pct + '%)';
+              return ' ' + name + ': ' + formatCurrency(ctx.raw, settings.budgetCurrency) + '  (' + pct + '%)';
             }
           }
         }
