@@ -1338,37 +1338,22 @@ function cancelEditBudget() {
 }
 
 function updateChart(monthBills, settings) {
-  // Aggregate by category — split subcategories into separate slices
+  // Aggregate by category — 外环按一级分类聚合（子分类金额并入所属一级分类）
   const totals = {};
-  for (const cat of CATEGORIES) {
-    if (cat.sub) {
-      for (const s of cat.sub) totals[cat.key + '_' + s.key] = 0;
-    }
-    totals[cat.key] = 0;
-  }
+  for (const cat of CATEGORIES) totals[cat.key] = 0;
 
   let essentialTotal = 0, nonessentialTotal = 0;
   for (const b of monthBills) {
     const res = resolveCategory(b);
     if (!res.cat) continue;
     const amt = convert(b.amount, b.currency, settings.budgetCurrency, rateData);
-    if (res.cat.sub && res.sub) {
-      totals[res.cat.key + '_' + res.sub.key] += amt;
-    } else {
-      totals[res.cat.key] += amt;
-    }
+    totals[res.cat.key] += amt;
     if (resolveGroup(res) === 'essential') essentialTotal += amt; else nonessentialTotal += amt;
   }
 
-  // Build items array: split subcategories into individual entries
+  // Build items array: 外环 = 一级分类（八达通/网购/线上消费/玩乐/杂项）
   const items = [];
   for (const cat of CATEGORIES) {
-    if (cat.sub) {
-      for (const s of cat.sub) {
-        const k = cat.key + '_' + s.key;
-        if (totals[k] > 0) items.push({ key: k, label: cat.label + ' · ' + s.label, emoji: cat.emoji, color: s.color });
-      }
-    }
     if (totals[cat.key] > 0) items.push({ key: cat.key, label: cat.label, emoji: cat.emoji, color: cat.color });
   }
   const total = Object.values(totals).reduce((a, b) => a + b, 0);
