@@ -682,7 +682,7 @@ body {
 // ==================== CONSTANTS ====================
 // group: 'essential'（必要）| 'nonessential'（非必要）；子分类无 group 时继承一级分类
 const CATEGORIES = [
-  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#06B6D4', group: 'essential', sub: null },
+  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#06B6D4', group: 'essential', hint: '餐饮·交通', sub: null },
   { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#8B5CF6', group: 'nonessential',
     sub: [
       { key: 'consumables',       label: '消耗品',       color: '#14B8A6', group: 'essential' },
@@ -1338,9 +1338,12 @@ function cancelEditBudget() {
 }
 
 function updateChart(monthBills, settings) {
-  // Aggregate by category — 外环按一级分类聚合（子分类金额并入所属一级分类）
+  // Aggregate — 中环按一级分类、外环按子分类（有子分类的分类拆片）
   const totals = {};
-  for (const cat of CATEGORIES) totals[cat.key] = 0;
+  for (const cat of CATEGORIES) {
+    totals[cat.key] = 0;
+    if (cat.sub) for (const s of cat.sub) totals[cat.key + '_' + s.key] = 0;
+  }
 
   let essentialTotal = 0, nonessentialTotal = 0;
   for (const b of monthBills) {
@@ -1348,18 +1351,27 @@ function updateChart(monthBills, settings) {
     if (!res.cat) continue;
     const amt = convert(b.amount, b.currency, settings.budgetCurrency, rateData);
     totals[res.cat.key] += amt;
+    if (res.cat.sub && res.sub) totals[res.cat.key + '_' + res.sub.key] += amt;
     if (resolveGroup(res) === 'essential') essentialTotal += amt; else nonessentialTotal += amt;
   }
 
-  // Build items array: 外环 = 一级分类（八达通/网购/线上消费/玩乐/杂项）
-  const items = [];
+  // Build items: 中环 = 一级分类；subItems: 外环 = 有子分类的拆片（无子分类的不出现）
+  const items = [], subItems = [];
   for (const cat of CATEGORIES) {
     if (totals[cat.key] > 0) items.push({ key: cat.key, label: cat.label, emoji: cat.emoji, color: cat.color });
+    if (cat.sub) {
+      for (const s of cat.sub) {
+        const k = cat.key + '_' + s.key;
+        if (totals[k] > 0) subItems.push({ key: k, label: cat.label + ' · ' + s.label, emoji: cat.emoji, color: s.color });
+      }
+    }
   }
-  const total = Object.values(totals).reduce((a, b) => a + b, 0);
+  // 总额只按一级分类键累加（子分类键是重复计数）
+  const total = CATEGORIES.reduce((s, cat) => s + totals[cat.key], 0);
 
   // Sort by amount descending for legend display
   items.sort((a, b) => (totals[b.key] || 0) - (totals[a.key] || 0));
+  subItems.sort((a, b) => (totals[b.key] || 0) - (totals[a.key] || 0));
 
   // Destroy previous chart
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
@@ -1376,19 +1388,21 @@ function updateChart(monthBills, settings) {
   // If Chart.js not loaded yet, show text summary and retry
   if (typeof Chart === 'undefined') {
     // Show legend only, skip chart
-    $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
+    $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, subItems, totals, total, settings.budgetCurrency);
     // Retry chart loading
     loadChartJs().then(ok => { if (ok) refreshAll(); });
     return;
   }
 
-  // Doughnut chart — 内环：必要 vs 非必要；外环：分类明细
+  // Doughnut chart — 内环：必要 vs 非必要；中环：一级分类；外环：子分类拆片
   const ctx = $('categoryChart').getContext('2d');
   chartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      // labels 顺序必须与 dataset 切片顺序一致：内环两片在前，外环明细在后
-      labels: ['必要消费', '非必要消费', ...items.map(c => c.emoji + ' ' + c.label)],
+      // labels 顺序必须与三个 dataset 切片顺序一致：内环两片 → 中环一级分类 → 外环子分类
+      labels: ['必要消费', '非必要消费',
+        ...items.map(c => c.emoji + ' ' + c.label),
+        ...subItems.map(c => c.emoji + ' ' + c.label)],
       datasets: [
         {
           data: [essentialTotal, nonessentialTotal],
@@ -1400,6 +1414,13 @@ function updateChart(monthBills, settings) {
         {
           data: items.map(c => totals[c.key]),
           backgroundColor: items.map(c => c.color),
+          borderColor: '#fff',
+          borderWidth: 2,
+          hoverBorderWidth: 3,
+        },
+        {
+          data: subItems.map(c => totals[c.key]),
+          backgroundColor: subItems.map(c => c.color),
           borderColor: '#fff',
           borderWidth: 2,
           hoverBorderWidth: 3,
@@ -1428,8 +1449,8 @@ function updateChart(monthBills, settings) {
   $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
 }
 
-// 图例：必要/非必要分组段（方点）+ 分类明细段（圆点），Chart.js 未加载时也走此函数
-function buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, currency) {
+// 图例：必要/非必要（方点）+ 分类（中环）+ 细分（外环），Chart.js 未加载时也走此函数
+function buildLegendHTML(essentialTotal, nonessentialTotal, items, subItems, totals, total, currency) {
   const pctOf = v => total > 0 ? (v / total * 100).toFixed(1) : 0;
   const groupRow = (label, val, color) => `
     <div class="category-legend-item">
@@ -1439,13 +1460,23 @@ function buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total
   let html = '<div class="legend-section-title">必要 vs 非必要</div>';
   html += groupRow('必要消费', essentialTotal, GROUP_COLORS.essential);
   html += groupRow('非必要消费', nonessentialTotal, GROUP_COLORS.nonessential);
-  html += '<div class="legend-section-title">分类明细</div>';
+  html += '<div class="legend-section-title">分类</div>';
   for (const item of items) {
     html += `
       <div class="category-legend-item">
         <span class="legend-left"><span class="legend-dot" style="background:${item.color}"></span>${item.emoji} ${item.label}</span>
         <span class="legend-right">${formatCurrency(totals[item.key], currency)} (${pctOf(totals[item.key])}%)</span>
       </div>`;
+  }
+  if (subItems.length > 0) {
+    html += '<div class="legend-section-title">细分</div>';
+    for (const item of subItems) {
+      html += `
+        <div class="category-legend-item">
+          <span class="legend-left"><span class="legend-dot" style="background:${item.color}"></span>${item.emoji} ${item.label}</span>
+          <span class="legend-right">${formatCurrency(totals[item.key], currency)} (${pctOf(totals[item.key])}%)</span>
+        </div>`;
+    }
   }
   return html;
 }
@@ -1668,7 +1699,7 @@ function onCategoryChange() {
 function populateCategorySelect(select) {
   let html = '<option value="">请选择分类</option>';
   for (const cat of CATEGORIES) {
-    html += `<option value="${cat.label}">${cat.emoji} ${cat.label}</option>`;
+    html += `<option value="${cat.label}">${cat.emoji} ${cat.label}${cat.hint ? '（' + cat.hint + '）' : ''}</option>`;
   }
   select.innerHTML = html;
 }
@@ -1701,7 +1732,7 @@ function showBillAnalysis() {
   // Populate filter dropdowns
   let catHTML = '<option value="">全部分类</option>';
   for (const cat of CATEGORIES) {
-    catHTML += `<option value="${cat.label}">${cat.emoji} ${cat.label}</option>`;
+    catHTML += `<option value="${cat.label}">${cat.emoji} ${cat.label}${cat.hint ? '（' + cat.hint + '）' : ''}</option>`;
     if (cat.sub) {
       for (const s of cat.sub) {
         catHTML += `<option value="${cat.label} › ${s.label}">  └ ${s.label}</option>`;
