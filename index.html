@@ -113,6 +113,11 @@ body {
 .nav-left { display: flex; align-items: center; gap: 10px; }
 .nav-left .logo { font-size: 28px; }
 .nav-left h1 { font-size: 18px; font-weight: 700; }
+.ver-badge {
+  font-size: 11px; font-weight: 600; color: var(--primary);
+  background: var(--primary-light); border-radius: 999px;
+  padding: 2px 8px; white-space: nowrap;
+}
 .nav-right { display: flex; align-items: center; gap: 14px; }
 .nav-right .user-info { font-size: 14px; color: var(--text-secondary); }
 .nav-right .monthly-total { font-weight: 700; color: var(--primary); font-size: 15px; }
@@ -451,6 +456,7 @@ body {
     <div class="nav-left">
       <span class="logo">📒</span>
       <h1>Living Expenses</h1>
+      <span class="ver-badge" id="verBadge"></span>
     </div>
     <div class="nav-right">
       <span class="monthly-total" id="navMonthTotal">本月 --</span>
@@ -733,6 +739,7 @@ function resolveCategory(bill) {
 function resolveGroup(res) {
   return (res.sub && res.sub.group) || (res.cat && res.cat.group) || 'nonessential';
 }
+const APP_VERSION = '2.4.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 const CURRENCIES = ['HKD','CNY','USD','EUR','GBP','JPY','KRW','AUD','CAD','CHF','SGD','SEK','NZD','THB','MYR'];
 const DEFAULT_DISPLAY_CURRENCIES = ['HKD','USD','EUR','GBP'];
 const CURRENCY_LABELS = {
@@ -1892,6 +1899,11 @@ function debounce(fn, delay) {
 
 // ==================== INIT ====================
 async function init() {
+  // 版本标记：导航栏显示当前版本号，便于确认加载的是最新部署
+  const badge = $('verBadge');
+  if (badge) badge.textContent = 'v' + APP_VERSION;
+  console.log('Living Expenses v' + APP_VERSION);
+
   // Check Supabase session first
   const { data: { session } } = await sb.auth.getSession();
 
