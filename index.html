@@ -1436,7 +1436,7 @@ function updateChart(monthBills, settings) {
           callbacks: {
             label: function(ctx) {
               const pct = total > 0 ? (ctx.raw / total * 100).toFixed(1) : 0;
-              return ' ' + formatCurrency(ctx.raw, settings.budgetCurrency) + '  (' + pct + '%)';
+              return ' ' + ctx.label + ': ' + formatCurrency(ctx.raw, settings.budgetCurrency) + '  (' + pct + '%)';
             }
           }
         }
@@ -1446,7 +1446,7 @@ function updateChart(monthBills, settings) {
   });
 
   // Legend
-  $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
+  $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, subItems, totals, total, settings.budgetCurrency);
 }
 
 // 图例：必要/非必要（方点）+ 分类（中环）+ 细分（外环），Chart.js 未加载时也走此函数
