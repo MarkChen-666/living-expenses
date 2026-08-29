@@ -689,23 +689,23 @@ body {
 // group: 'essential'（必要）| 'nonessential'（非必要）；子分类无 group 时继承一级分类
 // 颜色体系：按必要/非必要分两大色系（必要=绿系、非必要=橙系），同色系内不同深浅
 const CATEGORIES = [
-  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#166534', group: 'essential', hint: '餐饮·交通', sub: null },
-  { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#22C55E', group: 'nonessential',
+  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#22C55E', group: 'essential', hint: '餐饮·交通', sub: null },
+  { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#4ADE80', group: 'nonessential',
     sub: [
       { key: 'consumables',       label: '日用品',       color: '#86EFAC', group: 'essential' },
-      { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#FDBA74', group: 'nonessential' },
+      { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#FDE68A', group: 'nonessential' },
     ]},
   { key: 'online_consumption', label: '线上消费', emoji: '💻', color: '#F97316', group: 'nonessential',
     sub: [
-      { key: 'software', label: '软件会员', color: '#F59E0B' },
-      { key: 'gaming',   label: '游戏',     color: '#C2410C' },
-      { key: 'other',    label: '其他',     color: '#FBBF24' },
+      { key: 'software', label: '软件会员', color: '#FBBF24' },
+      { key: 'gaming',   label: '游戏',     color: '#FB923C' },
+      { key: 'other',    label: '其他',     color: '#FCD34D' },
     ]},
-  { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#EA580C', group: 'nonessential', sub: null },
-  { key: 'misc',          label: '杂项', emoji: '📦', color: '#92400E', group: 'nonessential', sub: null },
+  { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#FDBA74', group: 'nonessential', sub: null },
+  { key: 'misc',          label: '杂项', emoji: '📦', color: '#FCA5A5', group: 'nonessential', sub: null },
 ];
 
-const GROUP_COLORS = { essential: '#22C55E', nonessential: '#F97316' };
+const GROUP_COLORS = { essential: '#4ADE80', nonessential: '#F97316' };
 
 // ==================== LEGACY CATEGORY MAPPING ====================
 // 旧分类 label → 新分类（仅显示层映射，数据库数据不动）
@@ -743,7 +743,7 @@ function resolveCategory(bill) {
 function resolveGroup(res) {
   return (res.sub && res.sub.group) || (res.cat && res.cat.group) || 'nonessential';
 }
-const APP_VERSION = '2.6.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '2.7.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 const CURRENCIES = ['HKD','CNY','USD','EUR','GBP','JPY','KRW','AUD','CAD','CHF','SGD','SEK','NZD','THB','MYR'];
 const DEFAULT_DISPLAY_CURRENCIES = ['HKD','USD','EUR','GBP'];
 const CURRENCY_LABELS = {
