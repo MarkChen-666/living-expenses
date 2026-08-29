@@ -689,23 +689,23 @@ body {
 // group: 'essential'（必要）| 'nonessential'（非必要）；子分类无 group 时继承一级分类
 // 颜色体系：按必要/非必要分两大色系（必要=绿系、非必要=橙系），同色系内不同深浅
 const CATEGORIES = [
-  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#15803D', group: 'essential', hint: '餐饮·交通', sub: null },
-  { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#16A34A', group: 'nonessential',
+  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#166534', group: 'essential', hint: '餐饮·交通', sub: null },
+  { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#22C55E', group: 'nonessential',
     sub: [
-      { key: 'consumables',       label: '日用品',       color: '#4ADE80', group: 'essential' },
+      { key: 'consumables',       label: '日用品',       color: '#86EFAC', group: 'essential' },
       { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#FDBA74', group: 'nonessential' },
     ]},
   { key: 'online_consumption', label: '线上消费', emoji: '💻', color: '#F97316', group: 'nonessential',
     sub: [
       { key: 'software', label: '软件会员', color: '#F59E0B' },
-      { key: 'gaming',   label: '游戏',     color: '#EA580C' },
+      { key: 'gaming',   label: '游戏',     color: '#C2410C' },
       { key: 'other',    label: '其他',     color: '#FBBF24' },
     ]},
-  { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#D97706', group: 'nonessential', sub: null },
-  { key: 'misc',          label: '杂项', emoji: '📦', color: '#9A3412', group: 'nonessential', sub: null },
+  { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#EA580C', group: 'nonessential', sub: null },
+  { key: 'misc',          label: '杂项', emoji: '📦', color: '#92400E', group: 'nonessential', sub: null },
 ];
 
-const GROUP_COLORS = { essential: '#16A34A', nonessential: '#F97316' };
+const GROUP_COLORS = { essential: '#22C55E', nonessential: '#F97316' };
 
 // ==================== LEGACY CATEGORY MAPPING ====================
 // 旧分类 label → 新分类（仅显示层映射，数据库数据不动）
@@ -743,7 +743,7 @@ function resolveCategory(bill) {
 function resolveGroup(res) {
   return (res.sub && res.sub.group) || (res.cat && res.cat.group) || 'nonessential';
 }
-const APP_VERSION = '2.5.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '2.6.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 const CURRENCIES = ['HKD','CNY','USD','EUR','GBP','JPY','KRW','AUD','CAD','CHF','SGD','SEK','NZD','THB','MYR'];
 const DEFAULT_DISPLAY_CURRENCIES = ['HKD','USD','EUR','GBP'];
 const CURRENCY_LABELS = {
@@ -1373,17 +1373,20 @@ function updateChart(monthBills, settings) {
     if (cat.sub) {
       for (const s of cat.sub) {
         const k = cat.key + '_' + s.key;
-        if (totals[k] > 0) items.push({ key: k, label: s.label, emoji: cat.emoji, color: s.color });
+        if (totals[k] > 0) items.push({ key: k, label: s.label, emoji: cat.emoji, color: s.color, group: s.group || cat.group });
       }
     } else {
-      if (totals[cat.key] > 0) items.push({ key: cat.key, label: cat.label, emoji: cat.emoji, color: cat.color });
+      if (totals[cat.key] > 0) items.push({ key: cat.key, label: cat.label, emoji: cat.emoji, color: cat.color, group: cat.group });
     }
   }
   // 总额只按一级分类键累加（子分类键是重复计数）
   const total = CATEGORIES.reduce((s, cat) => s + totals[cat.key], 0);
 
-  // Sort by amount descending for legend display
-  items.sort((a, b) => (totals[b.key] || 0) - (totals[a.key] || 0));
+  // 排序：必要子类在前、非必要子类在后（对齐内环大类弧段），组内按金额降序
+  items.sort((a, b) => {
+    if (a.group !== b.group) return a.group === 'essential' ? -1 : 1;
+    return (totals[b.key] || 0) - (totals[a.key] || 0);
+  });
 
   // Destroy previous chart
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
@@ -1437,6 +1440,8 @@ function updateChart(monthBills, settings) {
       plugins: {
         legend: { display: false },
         tooltip: {
+          // 关闭默认 title（多 doughnut 下会错位显示内环名称），只显示自定义 label
+          title: { display: false },
           callbacks: {
             label: function(ctx) {
               // 各层名称按 datasetIndex 映射（Chart.js 多 doughnut 的 ctx.label 不按 dataset 偏移）
@@ -1452,6 +1457,7 @@ function updateChart(monthBills, settings) {
         }
       },
       cutout: '60%',
+      spacing: 2, // 切片间细缝，视觉更精致
     }
   });
 
