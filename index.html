@@ -743,7 +743,7 @@ function resolveCategory(bill) {
 function resolveGroup(res) {
   return (res.sub && res.sub.group) || (res.cat && res.cat.group) || 'nonessential';
 }
-const APP_VERSION = '2.7.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '2.8.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 const CURRENCIES = ['HKD','CNY','USD','EUR','GBP','JPY','KRW','AUD','CAD','CHF','SGD','SEK','NZD','THB','MYR'];
 const DEFAULT_DISPLAY_CURRENCIES = ['HKD','USD','EUR','GBP'];
 const CURRENCY_LABELS = {
@@ -1440,9 +1440,9 @@ function updateChart(monthBills, settings) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          // 关闭默认 title（多 doughnut 下会错位显示内环名称），只显示自定义 label
-          title: { display: false },
+          // 务必清空默认 title：多环 doughnut 下默认 title 取共享 labels[dataIndex]，会错位显示一级分类名
           callbacks: {
+            title: function() { return ''; }, // 不显示标题行
             label: function(ctx) {
               // 各层名称按 datasetIndex 映射（Chart.js 多 doughnut 的 ctx.label 不按 dataset 偏移）
               const layerNames = [
