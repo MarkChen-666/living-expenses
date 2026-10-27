@@ -243,6 +243,14 @@ body {
 .quick-add-form .fg.fg-payee { flex: 2 2 130px; }
 .quick-add-form .fg.fg-category { flex: 1 2 170px; }
 .quick-add-form .btn { height: 38px; flex-shrink: 0; }
+.cat-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.cat-chip {
+  border: 1px solid var(--border); background: var(--surface);
+  border-radius: 999px; padding: 3px 10px; font-size: 11.5px;
+  color: var(--text-secondary); cursor: pointer; font-family: inherit;
+  transition: border-color .15s, color .15s, background .15s;
+}
+.cat-chip:hover { border-color: var(--primary); color: var(--primary); background: var(--primary-light); }
 
 /* Chart Card */
 .chart-wrap { max-width: 280px; margin: 0 auto; }
@@ -597,6 +605,7 @@ body {
         </div>
         <button class="btn btn-primary" onclick="addBill()" style="height:38px">➕ 添加</button>
       </div>
+      <div class="cat-chips" id="catChips"></div>
     </div>
 
     <!-- Chart Card -->
@@ -794,10 +803,14 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.0.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.0.1'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.0.1', date: '2026-10-27', items: [
+    '修复：新建的分类没有出现在分类选择列表里',
+    '记账表单下方新增分类标签，点一下就能填入',
+  ]},
   { version: '3.0.0', date: '2026-10-27', items: [
     '分类改为自定义：记账时直接输入分类名，自动保存到你的分类库',
     '分类占比图改为单层圆环，按你自己的分类统计',
@@ -969,7 +982,10 @@ function addCategoryIfNew(rawName) {
   if (LEGACY_CATEGORY_MAP[name]) {
     return { ok: false, reason: `「${name}」是旧分类名，会自动并入「${LEGACY_CATEGORY_MAP[name].category}」，请换一个` };
   }
-  const cats = getCategories();
+  if (!currentSettings) return { ok: false, reason: '设置还在加载，请稍后重试' };
+  // 必须往 settings 里的真实数组 push；getCategories() 在未初始化时会返回临时空数组
+  if (!Array.isArray(currentSettings.categories)) currentSettings.categories = [];
+  const cats = currentSettings.categories;
   if (cats.some(c => c.name === name)) return { ok: true, created: false };
   cats.push({ name, color: nextCategoryColor() });
   return { ok: true, created: true };
@@ -1266,7 +1282,7 @@ async function showDashboard() {
 
   // Setup form defaults
   $('addDate').value = new Date().toISOString().slice(0, 10);
-  renderCategoryDatalist();
+  renderCategoryPickers();
   populateCurrencySelect($('addCurrency'), currentSettings.defaultCurrency);
 
   // Setup settings modal
@@ -1316,7 +1332,7 @@ async function refreshAll() {
   updateBillList(filteredBills, settings);
 
   // 分类建议 & 便签（云端的设置可能刚被其它设备改过）
-  renderCategoryDatalist();
+  renderCategoryPickers();
   renderNote();
 }
 
@@ -1725,7 +1741,7 @@ async function addBill() {
   if (added.created) {
     const saved = await saveSettingsToCloud(currentSettings);
     if (saved === false) { toast('⚠️ 分类保存失败，请检查网络后重试'); return; }
-    renderCategoryDatalist();
+    renderCategoryPickers();
   }
 
   const bill = {
@@ -1891,7 +1907,7 @@ async function renameCategory(oldName, newName) {
 
   toast(failed ? `✅ 改名成功，${updated} 笔已更新，${failed} 笔失败` : `✅ 改名成功，${updated} 笔账单已更新`);
   renderCategoryManager();
-  renderCategoryDatalist();
+  renderCategoryPickers();
   refreshAll();
 }
 
@@ -1918,7 +1934,7 @@ async function deleteCategory(index) {
   }
   toast('✅ 分类已删除');
   renderCategoryManager();
-  renderCategoryDatalist();
+  renderCategoryPickers();
   refreshAll();
 }
 
@@ -1989,13 +2005,28 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ==================== HELPERS ====================
-// 刷新记账表单的分类输入建议（datalist）
-function renderCategoryDatalist() {
+// 刷新记账表单的分类选择器：输入框建议列表（datalist）+ 下方可点击的标签
+function renderCategoryPickers() {
   const dl = $('categoryOptions');
-  if (!dl) return;
-  dl.innerHTML = getCategories()
-    .map(c => `<option value="${escAttr(c.name)}"></option>`)
-    .join('');
+  if (dl) {
+    dl.innerHTML = getCategories()
+      .map(c => `<option value="${escAttr(c.name)}"></option>`)
+      .join('');
+  }
+  const box = $('catChips');
+  if (box) {
+    box.innerHTML = getCategories().map(c =>
+      `<button type="button" class="cat-chip" data-cat="${escAttr(c.name)}" ` +
+      `onclick="pickCategory(this.dataset.cat)">${escHtml(c.name)}</button>`
+    ).join('');
+  }
+}
+
+function pickCategory(name) {
+  const el = $('addCategory');
+  if (!el) return;
+  el.value = name;
+  el.focus();
 }
 
 function populateCurrencySelect(select, selected) {
