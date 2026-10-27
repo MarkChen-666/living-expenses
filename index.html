@@ -2,10 +2,18 @@
 <html lang="zh-HK">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light">
+<meta name="theme-color" content="#0F3D2E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="记账">
+<meta name="format-detection" content="telephone=no">
 <title>Living Expenses — 个人记账</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<link rel="manifest" href="./manifest.json">
 <style>
 /* ===== Reset & Base ===== */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -366,6 +374,36 @@ body {
 .modal h2 { font-size: 18px; margin-bottom: 20px; }
 .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
 
+/* ===== Mobile tab bar: 只在手机上出现 ===== */
+.tabbar { display: none; }
+
+/* 视口高度：iOS Safari 地址栏伸缩会导致 100vh 跳变，用 dvh 覆盖 */
+body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
+
+/* Install hint (iOS) */
+.install-hint {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--primary-light); border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm); padding: 12px 14px; margin-bottom: 12px;
+}
+.ih-body { flex: 1; min-width: 0; }
+.ih-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
+.ih-text { font-size: 12px; color: var(--text-secondary); line-height: 1.6; }
+.ih-close {
+  background: none; border: none; font-size: 20px; line-height: 1;
+  color: var(--text-muted); cursor: pointer; padding: 0 2px;
+  border-radius: 4px; flex-shrink: 0;
+}
+
+/* Offline banner */
+.offline-banner {
+  background: #FEF3C7; color: #92400E;
+  border-left: 4px solid #F59E0B;
+  border-radius: var(--radius-sm);
+  padding: 9px 14px; margin-bottom: 12px;
+  font-size: 12.5px; font-weight: 600;
+}
+
 /* Changelog banner */
 .changelog-banner {
   display: flex; align-items: flex-start; gap: 12px;
@@ -415,20 +453,78 @@ body {
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
-  .dashboard-grid { grid-template-columns: 1fr; }
-  .navbar { padding: 10px 16px; margin: 0 -16px 16px; }
-  .dashboard { padding: 0 12px 24px; }
-  .nav-left h1 { font-size: 16px; }
-  .quick-add-form { flex-direction: column; }
-  .quick-add-form .fg { width: 100%; flex: 1 1 auto; }
-  .quick-add-form .fg.fg-date,
-  .quick-add-form .fg.fg-amount,
-  .quick-add-form .fg.fg-currency,
-  .quick-add-form .fg.fg-payee,
-  .quick-add-form .fg.fg-category,
+  /* 布局：单列，底部给标签栏让位 */
+  .dashboard { padding: 0 12px calc(78px + env(safe-area-inset-bottom, 0px)); }
+  .dashboard-grid { grid-template-columns: 1fr; gap: 14px; }
+  .card { padding: 16px; border-radius: 10px; }
+
+  /* 顶部导航：只保留 logo + 标题 + 本月总额 */
+  .navbar {
+    padding: 10px 14px;
+    margin: 0 -12px 14px;
+    top: env(safe-area-inset-top, 0px);
+  }
+  .nav-left { gap: 8px; min-width: 0; }
+  .nav-left .logo { font-size: 18px; }
+  .nav-left h1 { font-size: 16px; white-space: nowrap; }
+  .ver-badge,
+  .nav-right .user-info,
+  .nav-right .btn-sm { display: none; }
+  .nav-right { flex-shrink: 0; }
+  .monthly-total { font-size: 15px; font-weight: 700; }
+
+  /* 记账表单：单列堆叠；16px 字号避免 iOS 聚焦时自动放大 */
+  .quick-add-form { flex-direction: column; align-items: stretch; gap: 12px; }
+  /* 纵向不能用 flex-grow，否则每个字段会被拉出大片空白 */
+  .quick-add-form .fg { width: 100%; flex: 0 0 auto; }
   .quick-add-form .fg input,
-  .quick-add-form .fg select { width: 100%; }
+  .quick-add-form .fg select { width: 100%; font-size: 16px; padding: 11px 12px; }
+  .quick-add-form .btn {
+    width: 100%; height: 46px !important;
+    font-size: 15px; margin-top: 2px;
+  }
+
+  /* 图表与图例 */
+  .chart-wrap { max-width: 240px; }
+  .category-legend-item { gap: 10px; font-size: 12.5px; }
+  .legend-left { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .legend-right { font-size: 12px; }
+  .bill-list { max-height: none; }
+  .bill-item { padding: 14px 0; }
+
+  /* 分类标签 */
+  .cat-picker { padding: 12px; }
+  .cat-chip { font-size: 13px; padding: 6px 14px; }
+
+  /* 表单控件统一 16px */
+  #noteInput,
+  .form-group input,
+  .form-group select { font-size: 16px; }
   .auth-card { padding: 28px 20px; }
+
+  /* 设置弹窗占满更多宽度 */
+  .modal { width: calc(100% - 24px); padding: 20px; max-height: 88dvh; }
+
+  /* 底部标签栏 */
+  .tabbar {
+    display: flex;
+    position: fixed; left: 0; right: 0; bottom: 0;
+    z-index: 150;
+    background: rgba(255,255,255,.94);
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .tab-item {
+    flex: 1; border: none; background: none; cursor: pointer;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    padding: 9px 0 7px; font-family: inherit;
+    color: var(--text-muted); font-size: 11px;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tab-item .tab-icon { font-size: 20px; line-height: 1; }
+  .tab-item.active { color: var(--primary); font-weight: 700; }
 }
 
 /* ===== Scrollbar ===== */
@@ -470,10 +566,45 @@ body {
 }
 .ba-table .ba-del-btn:hover { color: var(--danger); }
 @media (max-width: 768px) {
+  /* 分析页导航栏：父容器没有 padding，不能再用负 margin，否则横向溢出 */
+  .bill-analysis .navbar { padding: 10px 14px; margin: 0 0 14px; }
+  .bill-analysis .nav-left h1 { font-size: 16px; }
+  .bill-analysis { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
+
   .ba-stats-row { grid-template-columns: repeat(2, 1fr); }
-  .ba-filters { flex-direction: column; }
+  .ba-filters { flex-direction: column; align-items: stretch; }
   .ba-fg { width: 100%; }
-  .ba-fg input, .ba-fg select { width: 100%; }
+  .ba-fg input, .ba-fg select { width: 100%; font-size: 16px; }
+  /* 这两处在 HTML 里写了行内字号，需要用 !important 才能盖住 */
+  #baSortBy, #budgetEditInput { font-size: 16px !important; }
+
+  /* 6 列表格在手机上必然横滑 → 每条记录变成一张卡片 */
+  .ba-table thead { display: none; }
+  .ba-table, .ba-table tbody, .ba-table tr, .ba-table td { display: block; width: 100%; }
+  .ba-table tr {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 10px;
+    background: var(--surface);
+  }
+  .ba-table td {
+    border: none;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    text-align: right;
+  }
+  .ba-table td::before {
+    content: attr(data-label);
+    color: var(--text-muted);
+    font-size: 12px;
+    flex-shrink: 0;
+    text-align: left;
+  }
+  .ba-table td:last-child { justify-content: flex-end; padding-top: 8px; }
+  .ba-table td:last-child::before { content: ''; }
 }
 /* ===== Animations ===== */
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -549,6 +680,20 @@ body {
 
 <!-- ==================== Dashboard ==================== -->
 <div class="dashboard" id="dashboard" style="display:none">
+  <!-- 离线提示 -->
+  <div class="offline-banner" id="offlineBanner" style="display:none">
+    <span id="offlineText">📴 离线模式</span>
+  </div>
+
+  <!-- 添加到主屏幕引导（仅 iOS Safari 且未安装时显示） -->
+  <div class="install-hint" id="installHint" style="display:none">
+    <div class="ih-body">
+      <div class="ih-title">📲 添加到主屏幕</div>
+      <div class="ih-text">在 Safari 中点击底部 <b>分享</b> 按钮，选择「添加到主屏幕」。安装后可全屏使用，并支持离线记账。</div>
+    </div>
+    <button class="ih-close" onclick="dismissInstallHint()" aria-label="关闭">×</button>
+  </div>
+
   <!-- 更新通告 -->
   <div class="changelog-banner" id="changelogBanner" style="display:none">
     <div class="cl-body">
@@ -693,6 +838,19 @@ body {
         placeholder="随手记点什么——预算原则、本月想控制的开销、提醒自己的话…"></textarea>
     </div>
   </div>
+
+  <!-- 移动端底部标签栏 -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab-item active" onclick="window.scrollTo({top:0,behavior:'smooth'})">
+      <span class="tab-icon">🏠</span><span class="tab-label">主页</span>
+    </button>
+    <button class="tab-item" onclick="openBillAnalysis()">
+      <span class="tab-icon">📊</span><span class="tab-label">分析</span>
+    </button>
+    <button class="tab-item" onclick="openSettings()">
+      <span class="tab-icon">⚙️</span><span class="tab-label">设置</span>
+    </button>
+  </nav>
 </div>
 
 <!-- ==================== Bill Analysis Page ==================== -->
@@ -773,6 +931,19 @@ body {
       <div id="baEmpty" class="bill-empty" style="display:none">没有匹配的账单记录</div>
     </div>
   </div>
+
+  <!-- 移动端底部标签栏 -->
+  <nav class="tabbar">
+    <button class="tab-item" onclick="goBackFromAnalysis()">
+      <span class="tab-icon">🏠</span><span class="tab-label">主页</span>
+    </button>
+    <button class="tab-item active" onclick="renderBillAnalysis()">
+      <span class="tab-icon">📊</span><span class="tab-label">分析</span>
+    </button>
+    <button class="tab-item" onclick="openSettings()">
+      <span class="tab-icon">⚙️</span><span class="tab-label">设置</span>
+    </button>
+  </nav>
 </div>
 
 <!-- Settings Modal -->
@@ -853,10 +1024,16 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.0.4'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.1.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.1.0', date: '2026-10-27', items: [
+    '可以添加到 iPhone 主屏幕，像 App 一样全屏打开',
+    '断网也能打开、查看账单，并可以继续记账，联网后自动补传',
+    '手机端布局重做：底部标签栏、单列表单、更大的按钮',
+    '账单分析页在手机上改为卡片式，不再需要横向滑动',
+  ]},
   { version: '3.0.4', date: '2026-10-27', items: [
     '删除键改为悬停分类标签时才出现，缩小并改成浅灰色，避免误触',
     '「用途」栏提示简化为「(选填)」',
@@ -900,6 +1077,9 @@ const STORAGE_DISMISSED_VERSION = 'hku_ledger_dismissed_version';
 // 数据库未加列时的降级镜像（云端字段为空时回退到这里）
 const STORAGE_CATEGORY_MIRROR = 'hku_ledger_categories_mirror';
 const STORAGE_NOTE_MIRROR = 'hku_ledger_note_mirror';
+// 离线支持：最近一次成功拉取的账单 + 待上传队列
+const STORAGE_BILLS_CACHE = 'hku_ledger_bills_cache';
+const STORAGE_OFFLINE_QUEUE = 'hku_ledger_offline_queue';
 const RATE_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 let rateRefreshTimer = null;
 
@@ -942,7 +1122,16 @@ function setCurrentUser(u) { localStorage.setItem(STORAGE_CURRENT, u); }
 async function getUserData() {
   const { data: bills, error: billsErr } = await sb
     .from('bills').select('*').order('date', { ascending: false });
-  if (billsErr) { console.error('Failed to load bills:', billsErr); return { bills: [], settings: getDefaultSettings() }; }
+  if (billsErr) {
+    // 拉取失败（离线 / 网络故障）：回退本地缓存，而不是当成空账本
+    console.warn('Failed to load bills, using local cache:', (billsErr && billsErr.message) || billsErr);
+    const cached = readBillsCache();
+    return {
+      bills: cached.bills,
+      settings: cached.settings || getDefaultSettings(),
+      offline: true,
+    };
+  }
 
   const { data: settingsRow, error: settingsErr } = await sb
     .from('user_settings').select('*').maybeSingle();
@@ -973,7 +1162,8 @@ async function getUserData() {
   } else {
     settings = getDefaultSettings();
   }
-  return { bills: bills || [], settings };
+  writeBillsCache(bills || [], settings);
+  return { bills: bills || [], settings, offline: false };
 }
 
 function getDefaultSettings() {
@@ -996,6 +1186,45 @@ function mirrorKey(base) {
 function safeParseJSON(raw, fallback) {
   try { const v = JSON.parse(raw); return v == null ? fallback : v; }
   catch { return fallback; }
+}
+
+// ==================== OFFLINE CACHE & QUEUE ====================
+// 最近一次成功拉取的账单和设置，断网时用来渲染，避免"打开是空的"
+function readBillsCache() {
+  const obj = safeParseJSON(localStorage.getItem(mirrorKey(STORAGE_BILLS_CACHE)), null);
+  if (!obj || !Array.isArray(obj.bills)) return { bills: [], settings: null, savedAt: 0 };
+  return { bills: obj.bills, settings: obj.settings || null, savedAt: obj.savedAt || 0 };
+}
+
+function writeBillsCache(bills, settings) {
+  try {
+    localStorage.setItem(mirrorKey(STORAGE_BILLS_CACHE), JSON.stringify({
+      bills: bills || [],
+      settings: settings || null,
+      savedAt: Date.now(),
+    }));
+  } catch (e) { console.warn('缓存账单失败', e); }
+}
+
+// 离线时记的账先排在这里，联网后逐条补传
+function readOfflineQueue() {
+  const arr = safeParseJSON(localStorage.getItem(mirrorKey(STORAGE_OFFLINE_QUEUE)), []);
+  return Array.isArray(arr) ? arr : [];
+}
+
+function writeOfflineQueue(arr) {
+  try { localStorage.setItem(mirrorKey(STORAGE_OFFLINE_QUEUE), JSON.stringify(arr)); } catch (e) {}
+}
+
+function enqueueOfflineBill(bill) {
+  const q = readOfflineQueue();
+  if (q.some(b => b.id === bill.id)) return;
+  q.push({ ...bill, __pending: true });
+  writeOfflineQueue(q);
+}
+
+function removeFromOfflineQueue(id) {
+  writeOfflineQueue(readOfflineQueue().filter(b => b.id !== id));
 }
 
 // 当前用户的分类列表（永远返回数组；null 表示尚未初始化，不在此处改写状态）
@@ -1072,7 +1301,7 @@ async function saveBillToCloud(bill) {
     id: bill.id, user_id: user.id, date: bill.date, amount: bill.amount, currency: bill.currency,
     payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || ''
   });
-  if (error) { console.error('Save bill error:', error); toast('⚠️ 保存失败：' + error.message); return false; }
+  if (error) { console.error('Save bill error:', error); return false; }
   return true;
 }
 
@@ -1314,6 +1543,7 @@ async function showDashboard() {
   currentUser = getCurrentUser();
   $('navUser').textContent = '👋 ' + currentUser;
   renderChangelog();
+  renderInstallHint();
 
   // Load Chart.js in background (don't block)
   loadChartJs();
@@ -1361,10 +1591,23 @@ async function showDashboard() {
 }
 
 async function refreshAll() {
+  // 在账单分析页时 dashboard 是隐藏的，这里只刷新分析结果，避免访问不存在的元素
+  if (!$('dashboard') || $('dashboard').style.display === 'none') {
+    if (typeof renderBillAnalysis === 'function') renderBillAnalysis();
+    return;
+  }
+
   const userData = await getUserData();
-  const bills = userData.bills;
   const settings = userData.settings;
   currentSettings = settings;
+
+  // 离线队列里的记录还没进云端，但用户应该立刻看到
+  const pendingBills = readOfflineQueue();
+  const pendingIds = new Set(pendingBills.map(b => b.id));
+  const bills = (userData.bills || [])
+    .filter(b => !pendingIds.has(b.id))
+    .concat(pendingBills);
+
   const now = new Date();
   const thisMonth = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0');
 
@@ -1397,7 +1640,61 @@ async function refreshAll() {
   // 分类建议 & 便签（云端的设置可能刚被其它设备改过）
   renderCategoryPickers();
   renderNote();
+  updateOfflineBanner();
 }
+
+// ==================== OFFLINE SYNC ====================
+let flushingQueue = false;
+
+// 联网后把离线记的账逐条补传（id 是客户端生成的 UUID，upsert 天然幂等）
+async function flushOfflineQueue() {
+  if (flushingQueue || !navigator.onLine) return;
+  const q = readOfflineQueue();
+  if (!q.length) return;
+
+  flushingQueue = true;
+  let synced = 0, failed = 0;
+  try {
+    const { data: { user } } = await sb.auth.getUser();
+    if (user) {
+      for (const bill of q) {
+        const { error } = await sb.from('bills').upsert({
+          id: bill.id, user_id: user.id, date: bill.date, amount: bill.amount,
+          currency: bill.currency, payee: bill.payee || '', category: bill.category,
+          subcategory: bill.subcategory || '', note: bill.note || '',
+        }, { onConflict: 'id', ignoreDuplicates: true });
+        if (error) { failed++; console.warn('同步失败', bill.id, error.message); }
+        else { removeFromOfflineQueue(bill.id); synced++; }
+      }
+    }
+  } catch (e) {
+    console.warn('同步异常', e);
+  } finally {
+    flushingQueue = false;
+  }
+
+  if (synced || failed) {
+    toast(failed ? `同步完成：${synced} 成功，${failed} 失败` : `✅ 已同步 ${synced} 条离线记录`);
+    refreshAll();
+  }
+}
+
+function updateOfflineBanner() {
+  const el = $('offlineBanner');
+  if (!el) return;
+  const pending = readOfflineQueue().length;
+  const offline = !navigator.onLine;
+  if (!offline && !pending) { el.style.display = 'none'; return; }
+  const parts = [];
+  if (offline) parts.push('📴 离线模式');
+  if (pending) parts.push(`${pending} 条待同步`);
+  const txt = $('offlineText');
+  if (txt) txt.textContent = parts.join(' · ');
+  el.style.display = '';
+}
+
+window.addEventListener('online', () => { updateOfflineBanner(); flushOfflineQueue(); });
+window.addEventListener('offline', () => updateOfflineBanner());
 
 function updateRateUI() {
   const tagsEl = $('rateTags');
@@ -1819,7 +2116,10 @@ async function addBill() {
     createdAt: Date.now(),
   };
 
-  if (!(await saveBillToCloud(bill))) return;
+  // 在线 → 直接写云端；离线或写入失败 → 进本地队列，联网后自动补传
+  let savedToCloud = false;
+  if (navigator.onLine) savedToCloud = await saveBillToCloud(bill);
+  if (!savedToCloud) enqueueOfflineBill(bill);
 
   // Reset form
   $('addAmount').value = '';
@@ -1832,7 +2132,7 @@ async function addBill() {
   currentViewMonth = '__this_month__';
   $('billMonthFilter').value = '__this_month__';
   refreshAll();
-  toast('✅ 账单已添加');
+  toast(savedToCloud ? '✅ 账单已添加' : '📴 已存本地，联网后自动同步');
 }
 
 async function deleteBill(id) {
@@ -1890,6 +2190,36 @@ function renderChangelog() {
   $('clDate').textContent = latest.date;
   $('clList').innerHTML = latest.items.map(t => `<li>${escHtml(t)}</li>`).join('');
   banner.style.display = '';
+}
+
+// ==================== INSTALL HINT (iOS) ====================
+const STORAGE_INSTALL_DISMISSED = 'hku_ledger_install_dismissed';
+
+function isIOSDevice() {
+  return /iPad|iPhone|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function isStandaloneMode() {
+  return window.navigator.standalone === true
+    || window.matchMedia('(display-mode: standalone)').matches;
+}
+
+// Safari 不会触发 beforeinstallprompt，只能在页面上手动教用户
+function renderInstallHint() {
+  const el = $('installHint');
+  if (!el) return;
+  if (!isIOSDevice() || isStandaloneMode()) { el.style.display = 'none'; return; }
+  try {
+    if (localStorage.getItem(STORAGE_INSTALL_DISMISSED) === '1') { el.style.display = 'none'; return; }
+  } catch (e) {}
+  el.style.display = '';
+}
+
+function dismissInstallHint() {
+  try { localStorage.setItem(STORAGE_INSTALL_DISMISSED, '1'); } catch (e) {}
+  const el = $('installHint');
+  if (el) el.style.display = 'none';
 }
 
 function dismissChangelog() {
@@ -2257,11 +2587,11 @@ async function renderBillAnalysis() {
     const res = resolveCategory(b);
     const converted = convert(b.amount, b.currency, currency, rateData);
     rows += `<tr>
-      <td>${b.date}</td>
-      <td>${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
-      <td>${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
-      <td>${escHtml(b.payee || '（未填写）')}</td>
-      <td>${escHtml(res.display)}</td>
+      <td data-label="日期">${b.date}</td>
+      <td data-label="原币金额">${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
+      <td data-label="换算金额">${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
+      <td data-label="用途">${escHtml(b.payee || '（未填写）')}</td>
+      <td data-label="分类">${escHtml(res.display)}</td>
       <td><button class="ba-del-btn" onclick="deleteBillFromAnalysis('${b.id}')" title="删除">🗑️</button></td>
     </tr>`;
   }
@@ -2298,6 +2628,22 @@ function debounce(fn, delay) {
 }
 
 // ==================== INIT ====================
+// ==================== PWA: SERVICE WORKER ====================
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    // updateViaCache: 'none' —— GitHub Pages 会给 sw.js 加 10 分钟缓存，
+    // 不绕过的话发版后要等很久才更新
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' }).catch((err) => {
+      console.warn('Service Worker 注册失败（不影响正常使用）：', err);
+    });
+  });
+}
+
+// 请求持久化存储，降低 iOS 在存储紧张时清掉离线缓存/队列的概率
+if (navigator.storage && typeof navigator.storage.persist === 'function') {
+  navigator.storage.persist().catch(() => {});
+}
+
 async function init() {
   // 版本标记：导航栏显示当前版本号，便于确认加载的是最新部署
   const badge = $('verBadge');
@@ -2342,11 +2688,11 @@ let chartJsReady = false;
 function loadChartJs() {
   return new Promise((resolve) => {
     if (typeof Chart !== 'undefined') { chartJsReady = true; resolve(true); return; }
-    // Try multiple CDNs
+    // 本地优先（离线可用），CDN 仅作兜底
     const cdns = [
+      './chart.umd.min.js',
       'https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js',
       'https://unpkg.com/chart.js@4.4.0/dist/chart.umd.min.js',
-      'https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js',
     ];
     let tried = 0;
     function tryNext() {
