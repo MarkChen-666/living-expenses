@@ -487,9 +487,9 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   .nav-left { gap: 8px; min-width: 0; }
   .nav-left .logo { font-size: 18px; }
   .nav-left h1 { font-size: 16px; white-space: nowrap; }
-  .ver-badge,
   .nav-right .user-info,
   .nav-right .btn-sm { display: none; }
+  .ver-badge { font-size: 10px; padding: 1px 6px; }
   .nav-right { flex-shrink: 0; }
   .monthly-total { font-size: 15px; font-weight: 700; }
 
@@ -902,7 +902,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
       <span class="tab-icon">🏠</span><span class="tab-label">主页</span>
     </button>
     <button class="tab-item" onclick="openBillAnalysis()">
-      <span class="tab-icon">📊</span><span class="tab-label">分析</span>
+      <span class="tab-icon">📊</span><span class="tab-label">账单&amp;分析</span>
     </button>
     <button class="tab-item" onclick="openSettings()">
       <span class="tab-icon">⚙️</span><span class="tab-label">设置</span>
@@ -999,7 +999,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
       <span class="tab-icon">🏠</span><span class="tab-label">主页</span>
     </button>
     <button class="tab-item active" onclick="renderBillAnalysis()">
-      <span class="tab-icon">📊</span><span class="tab-label">分析</span>
+      <span class="tab-icon">📊</span><span class="tab-label">账单&amp;分析</span>
     </button>
     <button class="tab-item" onclick="openSettings()">
       <span class="tab-icon">⚙️</span><span class="tab-label">设置</span>
@@ -1096,10 +1096,15 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.2.2'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.2.3'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.2.3', date: '2026-10-28', items: [
+    '手机端恢复显示版本号，可点开查看更新历史',
+    '底部标签改为「账单&分析」，与页面标题一致',
+    '账单开始记录创建时间（需数据库加列后才显示具体时刻）',
+  ]},
   { version: '3.2.2', date: '2026-10-28', items: [
     '点导航栏的版本号可以查看完整更新历史',
   ]},
@@ -1204,8 +1209,10 @@ function todayLocal() {
 function formatBillTime(bill) {
   const d = String(bill.date || '');
   const md = d.length >= 10 ? d.slice(5) : d; // MM-DD
-  if (!bill.createdAt) return md;
-  const t = new Date(bill.createdAt);
+  // createdAt 来自离线队列/内存，created_at 来自数据库（snake_case）
+  const ts = bill.createdAt || (bill.created_at ? Date.parse(bill.created_at) : 0);
+  if (!ts) return md;
+  const t = new Date(ts);
   if (isNaN(t.getTime())) return md;
   const hh = String(t.getHours()).padStart(2, '0');
   const mm = String(t.getMinutes()).padStart(2, '0');
@@ -1422,10 +1429,17 @@ function saveDisplayCurrencies(arr) {
 
 async function saveBillToCloud(bill) {
   const { data: { user } } = await sb.auth.getUser();
-  const { error } = await sb.from('bills').insert({
+  const row = {
     id: bill.id, user_id: user.id, date: bill.date, amount: bill.amount, currency: bill.currency,
-    payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || ''
-  });
+    payee: bill.payee || '', category: bill.category, subcategory: bill.subcategory || '', note: bill.note || '',
+    created_at: new Date(bill.createdAt || Date.now()).toISOString(),
+  };
+  let { error } = await sb.from('bills').insert(row);
+  // 表里还没加 created_at 列时，去掉它重试，保证记账本身不失败
+  if (error && /created_at|schema cache|column/i.test(error.message || '')) {
+    delete row.created_at;
+    ({ error } = await sb.from('bills').insert(row));
+  }
   if (error) { console.error('Save bill error:', error); return false; }
   return true;
 }
@@ -1786,11 +1800,17 @@ async function flushOfflineQueue() {
     const { data: { user } } = await sb.auth.getUser();
     if (user) {
       for (const bill of q) {
-        const { error } = await sb.from('bills').upsert({
+        const row = {
           id: bill.id, user_id: user.id, date: bill.date, amount: bill.amount,
           currency: bill.currency, payee: bill.payee || '', category: bill.category,
           subcategory: bill.subcategory || '', note: bill.note || '',
-        }, { onConflict: 'id', ignoreDuplicates: true });
+          created_at: new Date(bill.createdAt || Date.now()).toISOString(),
+        };
+        let { error } = await sb.from('bills').upsert(row, { onConflict: 'id', ignoreDuplicates: true });
+        if (error && /created_at|schema cache|column/i.test(error.message || '')) {
+          delete row.created_at;
+          ({ error } = await sb.from('bills').upsert(row, { onConflict: 'id', ignoreDuplicates: true }));
+        }
         if (error) { failed++; console.warn('同步失败', bill.id, error.message); }
         else { removeFromOfflineQueue(bill.id); synced++; }
       }
