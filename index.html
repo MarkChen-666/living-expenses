@@ -435,6 +435,12 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 .cl-head { font-size: 13.5px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
 .cl-date { font-weight: 400; color: var(--text-muted); font-size: 12px; margin-left: 8px; }
 .cl-list { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65; }
+.cl-hint {
+  margin-top: 9px; padding-top: 8px;
+  border-top: 1px dashed rgba(79,70,229,.28);
+  font-size: 11.5px; color: var(--text-muted); line-height: 1.5;
+}
+.cl-hint b { color: var(--primary); font-weight: 700; }
 .cl-close {
   background: none; border: none; font-size: 20px; line-height: 1;
   color: var(--text-muted); cursor: pointer; padding: 0 2px; border-radius: 4px;
@@ -629,7 +635,10 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 @media (max-width: 768px) {
   /* 分析页导航栏：父容器没有 padding，不能再用负 margin，否则横向溢出 */
   .bill-analysis .navbar { padding: 10px 14px; margin: 0 0 14px; }
-  .bill-analysis .nav-left h1 { font-size: 16px; }
+  .bill-analysis .nav-left h1 { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  /* 底部标签栏已有「主页」，顶部这个返回按钮在手机上只会挤掉标题 */
+  .bill-analysis .nav-right { display: none; }
+  .bill-analysis .nav-left { min-width: 0; }
   .bill-analysis { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 
   /* 统计卡：四个并排，字号自适应防止金额溢出 */
@@ -648,33 +657,38 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   /* 这两处在 HTML 里写了行内字号，需要用 !important 才能盖住 */
   #baSortBy, #budgetEditInput { font-size: 16px !important; }
 
-  /* 6 列表格在手机上必然横滑 → 每条记录变成一张卡片 */
+  /* 6 列表格在手机上必然横滑 → 每条记录压成两行紧凑卡片 */
   .ba-table thead { display: none; }
-  .ba-table, .ba-table tbody, .ba-table tr, .ba-table td { display: block; width: 100%; }
+  .ba-table, .ba-table tbody { display: block; width: 100%; }
+
   .ba-table tr {
+    display: grid;
+    /* minmax(0,1fr)：不加的话 nowrap 的文字会把 1fr 撑爆，导致整行横向溢出 */
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      "date  amount del"
+      "cat   payee  payee";
+    align-items: center;
+    gap: 4px 10px;
     border: 1px solid var(--border);
     border-radius: 10px;
-    padding: 10px 12px;
-    margin-bottom: 10px;
+    padding: 9px 12px;
+    margin-bottom: 8px;
     background: var(--surface);
+    min-width: 0;
+    overflow: hidden;
   }
-  .ba-table td {
-    border: none;
-    padding: 4px 0;
-    display: flex;
-    justify-content: space-between;
-    gap: 14px;
-    text-align: right;
-  }
-  .ba-table td::before {
-    content: attr(data-label);
-    color: var(--text-muted);
-    font-size: 12px;
-    flex-shrink: 0;
-    text-align: left;
-  }
-  .ba-table td:last-child { justify-content: flex-end; padding-top: 8px; }
-  .ba-table td:last-child::before { content: ''; }
+  .ba-table td { display: block; border: none; padding: 0; text-align: left; }
+  .ba-table td::before { content: none; }
+
+  .ba-c-date  { grid-area: date;  font-size: 12.5px; color: var(--text-secondary); white-space: nowrap; }
+  .ba-c-amt   { grid-area: amount; font-size: 14.5px; font-weight: 700; text-align: right; white-space: nowrap; }
+  .ba-c-del   { grid-area: del; }
+  .ba-c-cat   { grid-area: cat;   font-size: 12px; color: var(--text-secondary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ba-c-payee { grid-area: payee; font-size: 12px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; }
+  /* 用 .ba-table td.xxx 提高优先级，否则会被上面的 .ba-table td { display:block } 覆盖 */
+  .ba-table td.ba-c-conv { display: none; }
+  .ba-c-del .ba-del-btn { padding: 2px; font-size: 15px; }
 }
 /* ===== Animations ===== */
 @keyframes slideUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
@@ -770,6 +784,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
       <div class="cl-head">🎉 已更新到 v<span id="clVersion"></span>
         <span class="cl-date" id="clDate"></span></div>
       <ul class="cl-list" id="clList"></ul>
+      <div class="cl-hint">💡 点标题右侧的 <b>v<span class="cl-hint-ver"></span> ▾</b> 可随时查看完整更新历史</div>
     </div>
     <button class="cl-close" onclick="dismissChangelog()" aria-label="关闭">×</button>
   </div>
@@ -1096,10 +1111,15 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.2.3'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.2.4'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.2.4', date: '2026-10-28', items: [
+    '版本号加了 ▾ 提示，通告里也写明可以点开看历史',
+    '分析页手机端隐藏「返回主页」，标题不再被按钮遮住',
+    '账单卡片从 5 行压到 2 行，一屏能看更多记录',
+  ]},
   { version: '3.2.3', date: '2026-10-28', items: [
     '手机端恢复显示版本号，可点开查看更新历史',
     '底部标签改为「账单&分析」，与页面标题一致',
@@ -2342,6 +2362,8 @@ function renderChangelog() {
   $('clVersion').textContent = latest.version;
   $('clDate').textContent = latest.date;
   $('clList').innerHTML = latest.items.map(t => `<li>${escHtml(t)}</li>`).join('');
+  const hintVer = document.querySelector('.cl-hint-ver');
+  if (hintVer) hintVer.textContent = latest.version;
   banner.style.display = '';
 }
 
@@ -2797,12 +2819,12 @@ async function renderBillAnalysis() {
     const res = resolveCategory(b);
     const converted = convert(b.amount, b.currency, currency, rateData);
     rows += `<tr>
-      <td data-label="日期">${formatBillTime(b)}</td>
-      <td data-label="原币金额">${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
-      <td data-label="换算金额">${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
-      <td data-label="用途">${escHtml(b.payee || '（未填写）')}</td>
-      <td data-label="分类">${escHtml(res.display)}</td>
-      <td><button class="ba-del-btn" onclick="deleteBillFromAnalysis('${b.id}')" title="删除">🗑️</button></td>
+      <td class="ba-c-date" data-label="日期">${formatBillTime(b)}</td>
+      <td class="ba-c-amt" data-label="原币金额">${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
+      <td class="ba-c-conv" data-label="换算金额">${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
+      <td class="ba-c-payee" data-label="用途">${escHtml(b.payee || '（未填写）')}</td>
+      <td class="ba-c-cat" data-label="分类">${escHtml(res.display)}</td>
+      <td class="ba-c-del"><button class="ba-del-btn" onclick="deleteBillFromAnalysis('${b.id}')" title="删除">🗑️</button></td>
     </tr>`;
   }
   $('baTableBody').innerHTML = rows;
@@ -2876,7 +2898,10 @@ if (navigator.storage && typeof navigator.storage.persist === 'function') {
 async function init() {
   // 版本标记：导航栏显示当前版本号，便于确认加载的是最新部署
   const badge = $('verBadge');
-  if (badge) badge.textContent = 'v' + APP_VERSION;
+  if (badge) {
+    badge.textContent = 'v' + APP_VERSION + ' ▾';
+    badge.style.cursor = 'pointer';
+  }
   console.log('Living Expenses v' + APP_VERSION);
 
   // Check Supabase session first
