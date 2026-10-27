@@ -125,7 +125,22 @@ body {
   font-size: 11px; font-weight: 600; color: var(--primary);
   background: var(--primary-light); border-radius: 999px;
   padding: 2px 8px; white-space: nowrap;
+  cursor: pointer; transition: background .15s, color .15s;
 }
+.ver-badge:hover { background: var(--primary); color: #fff; }
+
+/* 更新历史弹窗 */
+.cl-history { max-height: 58vh; overflow-y: auto; margin-bottom: 4px; }
+.cl-ver-block { padding: 12px 0; border-bottom: 1px solid var(--border); }
+.cl-ver-block:last-child { border-bottom: none; }
+.cl-ver-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.cl-ver-num { font-size: 14px; font-weight: 700; color: var(--primary); }
+.cl-ver-tag {
+  font-size: 10px; font-weight: 700; color: #fff; background: var(--primary);
+  border-radius: 999px; padding: 1px 7px;
+}
+.cl-ver-date { font-size: 11.5px; color: var(--text-muted); }
+.cl-ver-list { margin: 0; padding-left: 18px; font-size: 12.5px; line-height: 1.65; color: var(--text-secondary); }
 .nav-right { display: flex; align-items: center; gap: 14px; }
 .nav-right .user-info { font-size: 14px; color: var(--text-secondary); }
 .nav-right .monthly-total { font-weight: 700; color: var(--primary); font-size: 15px; }
@@ -764,7 +779,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     <div class="nav-left">
       <span class="logo">📒</span>
       <h1>Living Expenses</h1>
-      <span class="ver-badge" id="verBadge"></span>
+      <span class="ver-badge" id="verBadge" title="查看更新历史" onclick="openChangelogHistory()"></span>
     </div>
     <div class="nav-right">
       <span class="monthly-total" id="navMonthTotal">本月 --</span>
@@ -992,6 +1007,17 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   </nav>
 </div>
 
+<!-- Changelog History Modal -->
+<div class="modal-overlay" id="changelogModal">
+  <div class="modal">
+    <h2>📋 更新历史</h2>
+    <div class="cl-history" id="clHistory"></div>
+    <div class="btn-row">
+      <button class="btn btn-sm btn-primary" onclick="closeChangelogHistory()">关闭</button>
+    </div>
+  </div>
+</div>
+
 <!-- Settings Modal -->
 <div class="modal-overlay" id="settingsModal">
   <div class="modal">
@@ -1070,10 +1096,13 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.2.1'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.2.2'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.2.2', date: '2026-10-28', items: [
+    '点导航栏的版本号可以查看完整更新历史',
+  ]},
   { version: '3.2.1', date: '2026-10-28', items: [
     '日期框改用 2026-10-28 格式，并与其他输入框对齐',
     '修复凌晨记账会记成前一天的问题（时区）',
@@ -2458,6 +2487,27 @@ function openSettings() {
   renderCategoryManager();
 }
 
+// 点版本徽标 → 完整更新历史
+function openChangelogHistory() {
+  const box = $('clHistory');
+  if (!box) return;
+  box.innerHTML = CHANGELOG.map((v, i) => `
+    <div class="cl-ver-block">
+      <div class="cl-ver-head">
+        <span class="cl-ver-num">v${escHtml(v.version)}</span>
+        ${i === 0 ? '<span class="cl-ver-tag">当前</span>' : ''}
+        <span class="cl-ver-date">${escHtml(v.date || '')}</span>
+      </div>
+      <ul class="cl-ver-list">${(v.items || []).map(t => `<li>${escHtml(t)}</li>`).join('')}</ul>
+    </div>`).join('');
+  $('changelogModal').classList.add('active');
+}
+
+function closeChangelogHistory() {
+  const el = $('changelogModal');
+  if (el) el.classList.remove('active');
+}
+
 function closeSettings() {
   $('settingsModal').classList.remove('active');
 }
@@ -2507,6 +2557,12 @@ document.addEventListener('DOMContentLoaded', () => {
   $('settingsModal').addEventListener('click', function(e) {
     if (e.target === this) closeSettings();
   });
+  const clModal = $('changelogModal');
+  if (clModal) {
+    clModal.addEventListener('click', function(e) {
+      if (e.target === this) closeChangelogHistory();
+    });
+  }
 });
 
 // 便签自动保存
