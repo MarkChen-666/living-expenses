@@ -245,6 +245,8 @@ body {
 .quick-add-form .fg input:focus {
   outline: none; border-color: var(--primary);
 }
+/* iOS 会把 date 输入框的文字居中，导致和左对齐的标签错位 */
+.quick-add-form .fg input[type="date"] { text-align: left; }
 .quick-add-form .fg.fg-date { flex: 0 0 140px; }
 .quick-add-form .fg.fg-amount { flex: 1 1 100px; }
 .quick-add-form .fg.fg-currency { flex: 1 2 140px; }
@@ -473,16 +475,46 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   .nav-right { flex-shrink: 0; }
   .monthly-total { font-size: 15px; font-weight: 700; }
 
-  /* 记账表单：单列堆叠；16px 字号避免 iOS 聚焦时自动放大 */
-  .quick-add-form { flex-direction: column; align-items: stretch; gap: 12px; }
-  /* 纵向不能用 flex-grow，否则每个字段会被拉出大片空白 */
-  .quick-add-form .fg { width: 100%; flex: 0 0 auto; }
+  /* 记账表单：两列网格，日期|金额 / 币种|用途 / 分类跨列 / 按钮跨列 */
+  .quick-add-form {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 12px;
+    align-items: end;
+  }
+  .quick-add-form .fg { width: 100%; flex: unset; min-width: 0; }
+  .quick-add-form .fg label { font-size: 11px; }
+  .quick-add-form .fg.fg-category { grid-column: 1 / -1; }
   .quick-add-form .fg input,
-  .quick-add-form .fg select { width: 100%; font-size: 16px; padding: 11px 12px; }
+  .quick-add-form .fg select { width: 100%; font-size: 16px; padding: 9px 10px; }
   .quick-add-form .btn {
+    grid-column: 1 / -1;
     width: 100%; height: 46px !important;
     font-size: 15px; margin-top: 2px;
   }
+
+  /* 汇率区：缩小胶囊、只露常用的 3 个、压缩间距 */
+  .card-header { margin-bottom: 10px; }
+  .card-header h2 { font-size: 14px; }
+  .card-header .card-icon { font-size: 16px; }
+  .rate-row {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    gap: 6px; margin-bottom: 8px;
+  }
+  .rate-row .rate-tag:nth-child(n+4) { display: none; }
+  .rate-tag {
+    padding: 5px 6px; border-radius: 12px;
+    font-size: 10.5px; font-weight: 600; text-align: center;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .rate-tag .rate-num { font-size: 13px; }
+  .rate-updated { font-size: 10px; }
+
+  /* 换算器：压成紧凑一行 */
+  .converter-row { gap: 6px; }
+  .converter-row input { width: 68px; padding: 6px 8px; font-size: 16px; }
+  .converter-row select { padding: 6px 6px; font-size: 16px; max-width: 118px; }
+  .converter-result { font-size: 16px; margin-left: 2px; }
 
   /* 图表与图例 */
   .chart-wrap { max-width: 240px; }
@@ -545,6 +577,14 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 .ba-filters {
   display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
 }
+.ba-filter-summary {
+  font-size: 13px; color: var(--text-secondary);
+  margin-bottom: 12px; display: none;
+}
+#baFilterToggle { display: none; }
+#baFilterToggle.has-filter::after {
+  content: ' ●'; color: var(--primary); font-size: 10px; vertical-align: middle;
+}
 .ba-fg { display: flex; flex-direction: column; gap: 4px; }
 .ba-fg label { font-size: 11px; font-weight: 600; color: var(--text-secondary); }
 .ba-fg input, .ba-fg select {
@@ -571,8 +611,17 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   .bill-analysis .nav-left h1 { font-size: 16px; }
   .bill-analysis { padding-bottom: calc(78px + env(safe-area-inset-bottom, 0px)); }
 
-  .ba-stats-row { grid-template-columns: repeat(2, 1fr); }
-  .ba-filters { flex-direction: column; align-items: stretch; }
+  /* 统计卡：四个并排，字号自适应防止金额溢出 */
+  .ba-stats-row { grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+  .ba-stat-card { padding: 10px 5px; }
+  .ba-stat-card .ba-stat-val { font-size: clamp(11px, 3.3vw, 15px); overflow-wrap: anywhere; line-height: 1.25; }
+  .ba-stat-card .ba-stat-lbl { font-size: 9.5px; margin-top: 2px; line-height: 1.3; }
+
+  /* 筛选：默认收起，点按钮展开 */
+  #baFilterToggle { display: inline-flex; }
+  .ba-filter-summary { display: block; }
+  .ba-filters { display: none; }
+  .ba-filters.open { display: flex; flex-direction: column; align-items: stretch; }
   .ba-fg { width: 100%; }
   .ba-fg input, .ba-fg select { width: 100%; font-size: 16px; }
   /* 这两处在 HTML 里写了行内字号，需要用 !important 才能盖住 */
@@ -630,8 +679,8 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
         <p>轻松管理每月开销</p>
       </div>
       <div class="form-group">
-        <label>📧 邮箱</label>
-        <input type="email" id="loginUser" placeholder="请输入邮箱" autocomplete="email">
+        <label>👤 用户名</label>
+        <input type="text" id="loginUser" placeholder="用户名或邮箱" autocomplete="username" autocapitalize="none" autocorrect="off">
       </div>
       <div class="form-group">
         <label>🔒 密码</label>
@@ -650,8 +699,8 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
         <p>开始记录你的大学生活开销</p>
       </div>
       <div class="form-group">
-        <label>📧 邮箱</label>
-        <input type="email" id="regUser" placeholder="请输入邮箱">
+        <label>👤 用户名</label>
+        <input type="text" id="regUser" placeholder="2-20 个字符，也可填邮箱" autocomplete="username" autocapitalize="none" autocorrect="off">
       </div>
       <div class="form-group">
         <label>🔒 密码</label>
@@ -812,21 +861,6 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
       <div class="category-legend" id="categoryLegend"></div>
     </div>
 
-    <!-- Bill List Card -->
-    <div class="card" id="billListCard">
-      <div class="card-header">
-        <h2><span class="card-icon">📋</span> 账单记录</h2>
-        <div class="bill-header-row">
-          <select id="billMonthFilter">
-            <option value="__this_month__">本月</option>
-            <option value="">全部月份</option>
-          </select>
-        </div>
-      </div>
-      <div class="bill-list" id="billList">
-        <div class="bill-empty">还没有账单，开始记录吧 ✍️</div>
-      </div>
-    </div>
 
     <!-- Note Card -->
     <div class="card card-full" id="noteCard">
@@ -872,8 +906,12 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 
     <!-- Filters -->
     <div class="card" style="margin-bottom:20px">
-      <div class="card-header"><h2>🔍 筛选条件</h2></div>
-      <div class="ba-filters">
+      <div class="card-header">
+        <h2>🔍 筛选条件</h2>
+        <button class="btn btn-sm btn-outline" onclick="toggleFilters()" id="baFilterToggle">筛选 ▾</button>
+      </div>
+      <div class="ba-filter-summary" id="baFilterSummary"></div>
+      <div class="ba-filters" id="baFilters">
         <div class="ba-fg">
           <label>📅 起始日期</label>
           <input type="date" id="baDateFrom">
@@ -963,8 +1001,8 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
       <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🔑 账户安全</h3>
       <div class="form-group">
-        <label>👤 新邮箱</label>
-        <input type="email" id="setNewUsername" placeholder="留空则不修改">
+        <label>👤 新用户名</label>
+        <input type="text" id="setNewUsername" placeholder="留空则不修改" autocapitalize="none" autocorrect="off">
         <div class="error-msg" id="settingsError"></div>
       </div>
       <div class="form-group">
@@ -1024,10 +1062,17 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.1.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.2.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.2.0', date: '2026-10-28', items: [
+    '登录改用「用户名」，不再需要邮箱格式（老账号填邮箱仍可登录）',
+    '手机端汇率区压缩：只显示 3 个常用汇率，字号和间距都收小',
+    '快速记账改成两列网格，并修正日期框文字居中造成的错位',
+    '主页移除账单记录，统一到「分析」页查看历史账单',
+    '分析页四个统计并排显示，筛选条件默认收起',
+  ]},
   { version: '3.1.0', date: '2026-10-27', items: [
     '可以添加到 iPhone 主屏幕，像 App 一样全屏打开',
     '断网也能打开、查看账单，并可以继续记账，联网后自动补传',
@@ -1181,6 +1226,22 @@ function getDefaultSettings() {
 // 本机镜像按账号隔离，避免同一浏览器上多个账号串数据
 function mirrorKey(base) {
   return base + ':' + (currentUser || 'anon');
+}
+
+// ==================== USERNAME ⇄ AUTH EMAIL ====================
+// Supabase Auth 只接受邮箱格式，所以界面上让用户填「用户名」，API 层补一个本地域名。
+// 老账号本身是邮箱，输入含 @ 时原样使用，照常能登录。
+const LOCAL_EMAIL_DOMAIN = '@living-expenses.local';
+
+function toAuthEmail(input) {
+  const v = String(input || '').trim();
+  if (!v) return '';
+  return v.includes('@') ? v : v + LOCAL_EMAIL_DOMAIN;
+}
+
+function displayName(authEmail) {
+  const v = String(authEmail || '');
+  return v.endsWith(LOCAL_EMAIL_DOMAIN) ? v.slice(0, -LOCAL_EMAIL_DOMAIN.length) : v;
 }
 
 function safeParseJSON(raw, fallback) {
@@ -1462,15 +1523,16 @@ function convert(amount, from, to, rateData) {
 
 // ==================== AUTH ====================
 async function handleLogin() {
-  const email = $('loginUser').value.trim();
+  const raw = $('loginUser').value.trim();
   const pass = $('loginPass').value;
   const errEl = $('loginError');
 
-  if (!email || !pass) { errEl.textContent = '请填写邮箱和密码'; errEl.style.display = 'block'; return; }
+  if (!raw || !pass) { errEl.textContent = '请填写用户名和密码'; errEl.style.display = 'block'; return; }
 
+  const email = toAuthEmail(raw);
   const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
   if (error) {
-    if (error.message.includes('Invalid')) errEl.textContent = '邮箱或密码错误';
+    if (error.message.includes('Invalid')) errEl.textContent = '用户名或密码错误';
     else if (error.message.includes('Email not confirmed')) errEl.textContent = '请先验证邮箱';
     else errEl.textContent = '登录失败：' + error.message;
     errEl.style.display = 'block';
@@ -1483,20 +1545,21 @@ async function handleLogin() {
 }
 
 async function handleRegister() {
-  const email = $('regUser').value.trim();
+  const raw = $('regUser').value.trim();
   const pass = $('regPass').value;
   const pass2 = $('regPass2').value;
   const currency = $('regCurrency').value;
   const errEl = $('regError');
 
-  if (!email || !pass) { errEl.textContent = '请填写邮箱和密码'; errEl.style.display = 'block'; return; }
-  if (!email.includes('@')) { errEl.textContent = '请输入有效邮箱地址'; errEl.style.display = 'block'; return; }
+  if (!raw || !pass) { errEl.textContent = '请填写用户名和密码'; errEl.style.display = 'block'; return; }
+  if (raw.length < 2) { errEl.textContent = '用户名至少 2 个字符'; errEl.style.display = 'block'; return; }
   if (pass.length < 6) { errEl.textContent = '密码至少6位'; errEl.style.display = 'block'; return; }
   if (pass !== pass2) { errEl.textContent = '两次密码不一致'; errEl.style.display = 'block'; return; }
 
+  const email = toAuthEmail(raw);
   const { data, error } = await sb.auth.signUp({ email, password: pass });
   if (error) {
-    if (error.message.includes('already')) errEl.textContent = '该邮箱已被注册';
+    if (error.message.includes('already')) errEl.textContent = '该用户名已被注册';
     else errEl.textContent = '注册失败：' + error.message;
     errEl.style.display = 'block';
     return;
@@ -1541,7 +1604,7 @@ async function showDashboard() {
   hide($('authPage'));
   show($('dashboard'));
   currentUser = getCurrentUser();
-  $('navUser').textContent = '👋 ' + currentUser;
+  $('navUser').textContent = '👋 ' + displayName(currentUser);
   renderChangelog();
   renderInstallHint();
 
@@ -1586,7 +1649,8 @@ async function showDashboard() {
 
   // Refresh all
   currentViewMonth = '__this_month__';
-  $('billMonthFilter').value = '__this_month__';
+  const mf = $('billMonthFilter');
+  if (mf) mf.value = '__this_month__';
   refreshAll();
 }
 
@@ -1999,6 +2063,7 @@ function buildLegendHTML(items, total, currency) {
 
 function updateBillList(bills, settings) {
   const listEl = $('billList');
+  if (!listEl) return; // 主页账单列表已移除，历史账单在分析页
   if (bills.length === 0) {
     listEl.innerHTML = '<div class="bill-empty">暂无账单记录 ✍️</div>';
     return;
@@ -2052,6 +2117,8 @@ function escAttr(str) {
 }
 
 async function populateMonthFilter() {
+  const el = $('billMonthFilter');
+  if (!el) return; // 主页账单列表已移除
   const userData = await getUserData();
   const months = new Set();
   for (const b of userData.bills) {
@@ -2130,7 +2197,8 @@ async function addBill() {
   // Refresh - keep view on current month
   populateMonthFilter();
   currentViewMonth = '__this_month__';
-  $('billMonthFilter').value = '__this_month__';
+  const mf = $('billMonthFilter');
+  if (mf) mf.value = '__this_month__';
   refreshAll();
   toast(savedToCloud ? '✅ 账单已添加' : '📴 已存本地，联网后自动同步');
 }
@@ -2360,21 +2428,22 @@ function closeSettings() {
 
 async function saveSettings() {
   const currency = $('setCurrency').value;
-  const newEmail = $('setNewUsername').value.trim();
+  const newNameRaw = $('setNewUsername').value.trim();
   const newPass = $('setNewPassword').value;
   const newPass2 = $('setNewPassword2').value;
   const errEl = $('settingsError');
 
   errEl.style.display = 'none';
 
-  // Handle email change
-  if (newEmail && newEmail !== currentUser) {
-    if (!newEmail.includes('@')) { errEl.textContent = '请输入有效的邮箱地址'; errEl.style.display = 'block'; return; }
+  // Handle username change
+  if (newNameRaw && newNameRaw !== displayName(currentUser)) {
+    if (newNameRaw.length < 2) { errEl.textContent = '用户名至少 2 个字符'; errEl.style.display = 'block'; return; }
+    const newEmail = toAuthEmail(newNameRaw);
     const { error } = await sb.auth.updateUser({ email: newEmail });
-    if (error) { errEl.textContent = '邮箱修改失败：' + error.message; errEl.style.display = 'block'; return; }
+    if (error) { errEl.textContent = '用户名修改失败：' + error.message; errEl.style.display = 'block'; return; }
     setCurrentUser(newEmail);
     currentUser = newEmail;
-    $('navUser').textContent = '👋 ' + currentUser;
+    $('navUser').textContent = '👋 ' + displayName(currentUser);
   }
 
   // Handle password change
@@ -2573,6 +2642,11 @@ async function renderBillAnalysis() {
 
   $('baResultCount').textContent = `(共 ${count} 笔)`;
 
+  // 折叠状态下也能看到总量
+  const summaryEl = $('baFilterSummary');
+  if (summaryEl) summaryEl.textContent = `共 ${count} 笔 · ${formatCurrency(totalSpent, currency)}`;
+  updateFilterBadge();
+
   // Table
   if (count === 0) {
     $('baTable').style.display = 'none';
@@ -2598,7 +2672,26 @@ async function renderBillAnalysis() {
   $('baTableBody').innerHTML = rows;
 }
 
-function applyBillFilters() { renderBillAnalysis(); }
+// 手机端筛选面板默认收起，点开才占地方
+function toggleFilters() {
+  const panel = $('baFilters');
+  const btn = $('baFilterToggle');
+  if (!panel) return;
+  const open = panel.classList.toggle('open');
+  if (btn) btn.textContent = open ? '筛选 ▴' : '筛选 ▾';
+  updateFilterBadge();
+}
+
+// 任一筛选条件有值时，按钮上点一个小圆点提示
+function updateFilterBadge() {
+  const btn = $('baFilterToggle');
+  if (!btn) return;
+  const ids = ['baDateFrom', 'baDateTo', 'baCategory', 'baCurrency', 'baKeyword', 'baAmtMin', 'baAmtMax'];
+  const has = ids.some(id => { const el = $(id); return el && String(el.value).trim() !== ''; });
+  btn.classList.toggle('has-filter', has);
+}
+
+function applyBillFilters() { updateFilterBadge(); renderBillAnalysis(); }
 
 function resetBillFilters() {
   $('baDateFrom').value = '';

@@ -1,7 +1,7 @@
 /* Service Worker — Living Expenses PWA
  * 每次发版必须同步修改 VERSION，否则旧缓存会盖住新代码。
  */
-const VERSION = '3.1.0';
+const VERSION = '3.2.0';
 
 const CACHE = 'living-expenses-' + VERSION;
 
