@@ -245,8 +245,11 @@ body {
 .quick-add-form .fg input:focus {
   outline: none; border-color: var(--primary);
 }
-/* iOS 会把 date 输入框的文字居中，导致和左对齐的标签错位 */
-.quick-add-form .fg input[type="date"] { text-align: left; }
+/* 隐藏的原生日期选择器：只用来弹系统日历，显示交给上面的文本框 */
+.native-date-ghost {
+  position: absolute; left: 0; bottom: 0; width: 100%; height: 100%;
+  opacity: 0; pointer-events: none; border: 0; padding: 0;
+}
 .quick-add-form .fg.fg-date { flex: 0 0 140px; }
 .quick-add-form .fg.fg-amount { flex: 1 1 100px; }
 .quick-add-form .fg.fg-currency { flex: 1 2 140px; }
@@ -512,8 +515,9 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 
   /* 换算器：压成紧凑一行 */
   .converter-row { gap: 6px; }
-  .converter-row input { width: 68px; padding: 6px 8px; font-size: 16px; }
-  .converter-row select { padding: 6px 6px; font-size: 16px; max-width: 118px; }
+  .converter-row input { width: 66px; padding: 6px 6px; font-size: 16px; }
+  .converter-row select { padding: 6px 4px; font-size: 15px; }
+  .converter-row > span[style] { display: none; } /* 隐藏中间的 →，省横向空间 */
   .converter-result { font-size: 16px; margin-left: 2px; }
 
   /* 图表与图例 */
@@ -577,11 +581,13 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 .ba-filters {
   display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end;
 }
-.ba-filter-summary {
-  font-size: 13px; color: var(--text-secondary);
-  margin-bottom: 12px; display: none;
+.ba-filter-bar {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px;
 }
-#baFilterToggle { display: none; }
+.ba-filter-title { font-size: 14px; font-weight: 700; flex-shrink: 0; }
+.ba-filter-summary { font-size: 13px; color: var(--text-secondary); flex: 1; min-width: 0; }
+#baFilterToggle { display: none; margin-left: auto; flex-shrink: 0; }
 #baFilterToggle.has-filter::after {
   content: ' ●'; color: var(--primary); font-size: 10px; vertical-align: middle;
 }
@@ -821,7 +827,9 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
       <div class="quick-add-form">
         <div class="fg fg-date">
           <label>📅 日期</label>
-          <input type="date" id="addDate">
+          <input type="text" id="addDate" placeholder="2026-10-28"
+                 inputmode="numeric" maxlength="10" autocomplete="off">
+          <input type="date" id="addDateNative" class="native-date-ghost" tabindex="-1" aria-hidden="true">
         </div>
         <div class="fg fg-amount">
           <label>💵 金额</label>
@@ -892,7 +900,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   <nav class="navbar">
     <div class="nav-left">
       <span class="logo">📒</span>
-      <h1>Living Expenses — 账单分析</h1>
+      <h1>Living Expenses — 历史账单&amp;分析</h1>
     </div>
     <div class="nav-right">
       <button class="btn btn-outline" onclick="goBackFromAnalysis()" style="padding:10px 24px;font-size:15px;font-weight:700">← 返回主页</button>
@@ -905,12 +913,12 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     <div class="ba-stats-row" id="baStats"></div>
 
     <!-- Filters -->
-    <div class="card" style="margin-bottom:20px">
-      <div class="card-header">
-        <h2>🔍 筛选条件</h2>
+    <div class="card" style="margin-bottom:14px">
+      <div class="ba-filter-bar">
+        <span class="ba-filter-title">🔍 筛选</span>
+        <span class="ba-filter-summary" id="baFilterSummary"></span>
         <button class="btn btn-sm btn-outline" onclick="toggleFilters()" id="baFilterToggle">筛选 ▾</button>
       </div>
-      <div class="ba-filter-summary" id="baFilterSummary"></div>
       <div class="ba-filters" id="baFilters">
         <div class="ba-fg">
           <label>📅 起始日期</label>
@@ -1062,10 +1070,17 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.2.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.2.1'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.2.1', date: '2026-10-28', items: [
+    '日期框改用 2026-10-28 格式，并与其他输入框对齐',
+    '修复凌晨记账会记成前一天的问题（时区）',
+    '换算器的币种下拉不再被截断',
+    '分析页改名「历史账单&分析」，筛选栏压成一行',
+    '账单列表显示记账时刻（月-日 时:分）',
+  ]},
   { version: '3.2.0', date: '2026-10-28', items: [
     '登录改用「用户名」，不再需要邮箱格式（老账号填邮箱仍可登录）',
     '手机端汇率区压缩：只显示 3 个常用汇率，字号和间距都收小',
@@ -1146,6 +1161,26 @@ async function sha256(text) {
 
 function generateId() {
   return crypto.randomUUID();
+}
+
+// 本地今天的 YYYY-MM-DD（不能用 toISOString，那是 UTC，香港凌晨会差一天）
+function todayLocal() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+// 账单显示用：日期 + 记账时刻（createdAt 存的是精确时间戳）
+function formatBillTime(bill) {
+  const d = String(bill.date || '');
+  const md = d.length >= 10 ? d.slice(5) : d; // MM-DD
+  if (!bill.createdAt) return md;
+  const t = new Date(bill.createdAt);
+  if (isNaN(t.getTime())) return md;
+  const hh = String(t.getHours()).padStart(2, '0');
+  const mm = String(t.getMinutes()).padStart(2, '0');
+  return `${md} ${hh}:${mm}`;
 }
 
 function formatCurrency(amount, currency) {
@@ -1637,7 +1672,7 @@ async function showDashboard() {
   updateRateUI();
 
   // Setup form defaults
-  $('addDate').value = new Date().toISOString().slice(0, 10);
+  $('addDate').value = todayLocal();
   renderCategoryPickers();
   populateCurrencySelect($('addCurrency'), currentSettings.defaultCurrency);
 
@@ -1787,8 +1822,9 @@ function updateRateUI() {
 
   // Converter defaults: 100 CNY → HKD (init once)
   if (!$('convFrom').dataset.initialized) {
-    populateCurrencySelect($('convFrom'), 'CNY');
-    populateCurrencySelect($('convTo'), 'HKD');
+    const narrow = window.innerWidth <= 768;
+    populateCurrencySelect($('convFrom'), 'CNY', narrow);
+    populateCurrencySelect($('convTo'), 'HKD', narrow);
     $('convFrom').dataset.initialized = '1';
   }
   updateConverter();
@@ -2191,7 +2227,7 @@ async function addBill() {
   // Reset form
   $('addAmount').value = '';
   $('addPayee').value = '';
-  $('addDate').value = new Date().toISOString().slice(0, 10);
+  $('addDate').value = todayLocal();
   $('addCategory').value = '';
 
   // Refresh - keep view on current month
@@ -2485,6 +2521,27 @@ document.addEventListener('DOMContentLoaded', () => {
   if (catEl) catEl.addEventListener('input', highlightActiveChip);
 });
 
+// 日期：文本框负责显示 YYYY-MM-DD（iOS 原生控件强制中文格式，改不了），
+// 点击时借用隐藏的原生选择器弹出系统日历
+document.addEventListener('DOMContentLoaded', () => {
+  const txt = $('addDate');
+  const native = $('addDateNative');
+  if (!txt || !native) return;
+
+  txt.addEventListener('click', () => {
+    native.value = /^\d{4}-\d{2}-\d{2}$/.test(txt.value) ? txt.value : '';
+    if (typeof native.showPicker === 'function') {
+      try { native.showPicker(); return; } catch (e) { /* 回退到 focus */ }
+    }
+    native.focus();
+    native.click();
+  });
+
+  native.addEventListener('change', () => {
+    if (native.value) txt.value = native.value;
+  });
+});
+
 // ==================== HELPERS ====================
 // 刷新记账表单的分类选择器：输入框建议列表（datalist）+ 下方可点击的标签
 function renderCategoryPickers() {
@@ -2529,10 +2586,13 @@ function highlightActiveChip() {
   });
 }
 
-function populateCurrencySelect(select, selected) {
+function populateCurrencySelect(select, selected, short) {
   let html = '';
   for (const c of CURRENCIES) {
-    html += `<option value="${c}" ${c === selected ? 'selected' : ''}>${CURRENCY_EMOJI[c]} ${c} ${CURRENCY_LABELS[c]}</option>`;
+    const label = short
+      ? `${CURRENCY_EMOJI[c]} ${c}`
+      : `${CURRENCY_EMOJI[c]} ${c} ${CURRENCY_LABELS[c]}`;
+    html += `<option value="${c}" ${c === selected ? 'selected' : ''}>${label}</option>`;
   }
   select.innerHTML = html;
 }
@@ -2661,7 +2721,7 @@ async function renderBillAnalysis() {
     const res = resolveCategory(b);
     const converted = convert(b.amount, b.currency, currency, rateData);
     rows += `<tr>
-      <td data-label="日期">${b.date}</td>
+      <td data-label="日期">${formatBillTime(b)}</td>
       <td data-label="原币金额">${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
       <td data-label="换算金额">${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
       <td data-label="用途">${escHtml(b.payee || '（未填写）')}</td>
