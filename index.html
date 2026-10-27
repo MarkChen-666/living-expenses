@@ -256,14 +256,30 @@ body {
 }
 .cat-picker-title { font-size: 13.5px; font-weight: 700; color: var(--text); }
 .cat-picker-hint { font-size: 12.5px; color: var(--text-muted); }
-.cat-chips { display: flex; flex-wrap: wrap; gap: 8px; max-height: 132px; overflow-y: auto; }
+/* gap 留大一点，给 chip 右上角的 × 让出位置，避免和相邻标签叠在一起 */
+.cat-chips { display: flex; flex-wrap: wrap; gap: 16px 13px; padding: 4px 6px 0 2px; }
 .cat-chip {
+  position: relative;
   display: inline-flex; align-items: center; gap: 6px;
   border: 1.5px solid var(--border); background: var(--surface);
   border-radius: 999px; padding: 6px 16px; font-size: 13.5px;
   color: var(--text); cursor: pointer; font-family: inherit;
   transition: border-color .15s, color .15s, background .15s, box-shadow .15s;
 }
+/* 右上角删除角标：默认半透明，悬停加深 */
+.chip-x {
+  position: absolute; top: -7px; right: -7px;
+  width: 18px; height: 18px; border-radius: 50%;
+  background: var(--danger); color: #fff;
+  font-size: 13px; line-height: 17px; text-align: center;
+  font-weight: 700; cursor: pointer; user-select: none;
+  opacity: .62; transition: opacity .15s, transform .15s;
+  border: 2px solid var(--surface);
+  box-shadow: 0 1px 3px rgba(0,0,0,.18);
+}
+.chip-x::before { content: ''; position: absolute; inset: -9px; } /* 扩大点击区域 */
+.cat-chip:hover .chip-x { opacity: 1; }
+.chip-x:hover { transform: scale(1.15); opacity: 1; }
 .cat-chip::before {
   content: ''; width: 8px; height: 8px; border-radius: 50%;
   background: var(--chip-color, var(--text-muted)); flex-shrink: 0;
@@ -835,10 +851,14 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.0.2'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.0.3'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.0.3', date: '2026-10-27', items: [
+    '分类标签右上角新增 ×，可直接删除分类，不用再进设置页',
+    '删除前会提示该分类下有多少笔账单',
+  ]},
   { version: '3.0.2', date: '2026-10-27', items: [
     '分类标签改为独立区块：加标题和说明、放大字号、带分类颜色',
     '选中的分类会高亮显示',
@@ -1948,6 +1968,13 @@ async function renameCategory(oldName, newName) {
   refreshAll();
 }
 
+// 分类标签右上角 × 的入口：按名字找到后走同一套删除流程
+async function removeCategoryByName(name) {
+  const index = getCategories().findIndex(c => c.name === name);
+  if (index < 0) return;
+  await deleteCategory(index);
+}
+
 async function deleteCategory(index) {
   const cats = getCategories();
   const cat = cats[index];
@@ -1962,6 +1989,12 @@ async function deleteCategory(index) {
     : `删除「${cat.name}」？`;
   if (!confirm(msg)) return;
   const removed = cats.splice(index, 1)[0];
+  // 如果输入框里正是这个分类，清空并取消高亮
+  const input = $('addCategory');
+  if (input && input.value.trim() === removed.name) {
+    input.value = '';
+    highlightActiveChip();
+  }
   const saved = await saveSettingsToCloud(currentSettings);
   if (saved === false) {
     cats.splice(index, 0, removed); // 放回原位
@@ -2064,7 +2097,10 @@ function renderCategoryPickers() {
           const color = /^#[0-9a-fA-F]{6}$/.test(c.color || '') ? c.color : '#9CA3AF';
           return `<button type="button" class="cat-chip" data-cat="${escAttr(c.name)}" ` +
                  `style="--chip-color:${color}" ` +
-                 `onclick="pickCategory(this.dataset.cat)">${escHtml(c.name)}</button>`;
+                 `onclick="pickCategory(this.dataset.cat)">${escHtml(c.name)}` +
+                 `<span class="chip-x" data-del="${escAttr(c.name)}" title="删除这个分类" ` +
+                 `onclick="event.stopPropagation(); removeCategoryByName(this.dataset.del)">×</span>` +
+                 `</button>`;
         }).join('')
       : '<span class="cat-empty">还没有分类——在上方「分类」里输入第一个名字就会自动创建</span>';
   }
