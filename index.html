@@ -241,8 +241,7 @@ body {
 .quick-add-form .fg.fg-amount { flex: 1 1 100px; }
 .quick-add-form .fg.fg-currency { flex: 1 2 140px; }
 .quick-add-form .fg.fg-payee { flex: 2 2 130px; }
-.quick-add-form .fg.fg-category { flex: 1 2 140px; }
-.quick-add-form .fg.fg-subcat { flex: 1 2 140px; }
+.quick-add-form .fg.fg-category { flex: 1 2 170px; }
 .quick-add-form .btn { height: 38px; flex-shrink: 0; }
 
 /* Chart Card */
@@ -310,9 +309,57 @@ body {
 .modal {
   background: var(--surface); border-radius: var(--radius);
   box-shadow: var(--shadow-lg); padding: 28px; width: 90%; max-width: 440px;
+  max-height: 85vh; overflow-y: auto;
 }
 .modal h2 { font-size: 18px; margin-bottom: 20px; }
 .modal .btn-row { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+
+/* Changelog banner */
+.changelog-banner {
+  display: flex; align-items: flex-start; gap: 12px;
+  background: var(--primary-light); border-left: 4px solid var(--primary);
+  border-radius: var(--radius-sm); padding: 14px 16px; margin-bottom: 16px;
+  animation: slideUp .25s ease;
+}
+.cl-body { flex: 1; min-width: 0; }
+.cl-head { font-size: 13.5px; font-weight: 700; color: var(--primary); margin-bottom: 6px; }
+.cl-date { font-weight: 400; color: var(--text-muted); font-size: 12px; margin-left: 8px; }
+.cl-list { margin: 0; padding-left: 18px; font-size: 12.5px; color: var(--text-secondary); line-height: 1.65; }
+.cl-close {
+  background: none; border: none; font-size: 20px; line-height: 1;
+  color: var(--text-muted); cursor: pointer; padding: 0 2px; border-radius: 4px;
+  flex-shrink: 0;
+}
+.cl-close:hover { color: var(--text); background: rgba(0,0,0,.06); }
+
+/* Note card */
+#noteInput {
+  width: 100%; box-sizing: border-box; border: 1.5px solid var(--border);
+  border-radius: var(--radius-sm); padding: 10px 12px; font-size: 13.5px;
+  font-family: inherit; color: var(--text); resize: vertical; min-height: 96px;
+  line-height: 1.6; background: #fff;
+}
+#noteInput:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px var(--primary-light); }
+.note-status { font-size: 11.5px; color: var(--text-muted); }
+
+/* Category manager */
+.cat-hint { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; line-height: 1.5; }
+.cat-manager { max-height: 220px; overflow-y: auto; }
+.cat-manager-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 0; border-bottom: 1px solid var(--border); font-size: 13px;
+}
+.cat-manager-row:last-child { border-bottom: none; }
+.cat-manager-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+.cat-manager-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cat-manager-count { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+.cat-manager-btn {
+  background: none; border: none; cursor: pointer; font-size: 12px;
+  color: var(--text-muted); padding: 2px 6px; border-radius: 4px; font-family: inherit;
+}
+.cat-manager-btn:hover { color: var(--primary); background: var(--primary-light); }
+.cat-manager-btn.danger:hover { color: var(--danger); background: #FEF2F2; }
+.cat-manager-empty { font-size: 12.5px; color: var(--text-muted); padding: 10px 0; }
 
 /* ===== Responsive ===== */
 @media (max-width: 768px) {
@@ -327,7 +374,6 @@ body {
   .quick-add-form .fg.fg-currency,
   .quick-add-form .fg.fg-payee,
   .quick-add-form .fg.fg-category,
-  .quick-add-form .fg.fg-subcat { flex: 0 0 auto; }
   .quick-add-form .fg input,
   .quick-add-form .fg select { width: 100%; }
   .auth-card { padding: 28px 20px; }
@@ -451,6 +497,16 @@ body {
 
 <!-- ==================== Dashboard ==================== -->
 <div class="dashboard" id="dashboard" style="display:none">
+  <!-- 更新通告 -->
+  <div class="changelog-banner" id="changelogBanner" style="display:none">
+    <div class="cl-body">
+      <div class="cl-head">🎉 已更新到 v<span id="clVersion"></span>
+        <span class="cl-date" id="clDate"></span></div>
+      <ul class="cl-list" id="clList"></ul>
+    </div>
+    <button class="cl-close" onclick="dismissChangelog()" aria-label="关闭">×</button>
+  </div>
+
   <!-- Navbar -->
   <nav class="navbar">
     <div class="nav-left">
@@ -535,11 +591,9 @@ body {
         </div>
         <div class="fg fg-category">
           <label>📂 分类</label>
-          <select id="addCategory" onchange="onCategoryChange()"></select>
-        </div>
-        <div class="fg fg-subcat" id="subcatGroup" style="display:none">
-          <label>📁 子分类</label>
-          <select id="addSubcategory"></select>
+          <input type="text" id="addCategory" list="categoryOptions" maxlength="12"
+                 placeholder="输入或选择，新的自动保存" autocomplete="off">
+          <datalist id="categoryOptions"></datalist>
         </div>
         <button class="btn btn-primary" onclick="addBill()" style="height:38px">➕ 添加</button>
       </div>
@@ -568,6 +622,16 @@ body {
       <div class="bill-list" id="billList">
         <div class="bill-empty">还没有账单，开始记录吧 ✍️</div>
       </div>
+    </div>
+
+    <!-- Note Card -->
+    <div class="card card-full" id="noteCard">
+      <div class="card-header">
+        <h2><span class="card-icon">📝</span> 便签</h2>
+        <span class="note-status" id="noteStatus"></span>
+      </div>
+      <textarea id="noteInput" maxlength="2000"
+        placeholder="随手记点什么——预算原则、本月想控制的开销、提醒自己的话…"></textarea>
     </div>
   </div>
 </div>
@@ -662,6 +726,11 @@ body {
       <div style="font-size:12px;color:var(--text-muted);margin-top:4px">用于汇总换算和汇率显示</div>
     </div>
     <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
+      <h3 style="font-size:14px;font-weight:700;margin-bottom:4px">📂 我的分类</h3>
+      <div class="cat-hint">记账时输入新名字会自动加进来；改名会同步更新历史账单</div>
+      <div class="cat-manager" id="catManager"></div>
+    </div>
+    <div style="border-top:1px solid var(--border);padding-top:16px;margin-top:8px">
       <h3 style="font-size:14px;font-weight:700;margin-bottom:12px">🔑 账户安全</h3>
       <div class="form-group">
         <label>👤 新邮箱</label>
@@ -686,26 +755,14 @@ body {
 
 <script>
 // ==================== CONSTANTS ====================
-// group: 'essential'（必要）| 'nonessential'（非必要）；子分类无 group 时继承一级分类
-// 颜色体系：按必要/非必要分两大色系（必要=绿系、非必要=橙系），同色系内不同深浅
-const CATEGORIES = [
-  { key: 'octopus',    label: '八达通',   emoji: '🚇', color: '#22C55E', group: 'essential', hint: '餐饮·交通', sub: null },
-  { key: 'online_shopping', label: '网购', emoji: '🛒', color: '#4ADE80', group: 'nonessential',
-    sub: [
-      { key: 'consumables',       label: '日用品',       color: '#86EFAC', group: 'essential' },
-      { key: 'lifestyle_upgrade', label: '提升生活质量', color: '#FDE68A', group: 'nonessential' },
-    ]},
-  { key: 'online_consumption', label: '线上消费', emoji: '💻', color: '#F97316', group: 'nonessential',
-    sub: [
-      { key: 'software', label: '软件会员', color: '#FBBF24' },
-      { key: 'gaming',   label: '游戏',     color: '#FB923C' },
-      { key: 'other',    label: '其他',     color: '#FCD34D' },
-    ]},
-  { key: 'entertainment', label: '玩乐', emoji: '🎮', color: '#FDBA74', group: 'nonessential', sub: null },
-  { key: 'misc',          label: '杂项', emoji: '📦', color: '#FCA5A5', group: 'nonessential', sub: null },
+// 分类由每个用户自己维护，存在 user_settings.custom_categories 里
+// 这里只放配色池：新建分类时优先取一个尚未被占用的颜色
+const CATEGORY_PALETTE = [
+  '#F97316', '#22C55E', '#3B82F6', '#EC4899', '#EAB308', '#14B8A6',
+  '#8B5CF6', '#EF4444', '#06B6D4', '#F59E0B', '#10B981', '#6366F1',
+  '#84CC16', '#F43F5E',
 ];
-
-const GROUP_COLORS = { essential: '#4ADE80', nonessential: '#F97316' };
+const CATEGORY_FALLBACK_COLOR = '#9CA3AF'; // 账单单上有、但已从分类库删除的分类
 
 // ==================== LEGACY CATEGORY MAPPING ====================
 // 旧分类 label → 新分类（仅显示层映射，数据库数据不动）
@@ -722,8 +779,8 @@ const LEGACY_CATEGORY_MAP = {
 // 子分类改名映射（如历史账单存的'消耗品' → 新名'日用品'）
 const LEGACY_SUBCATEGORY_MAP = { '消耗品': '日用品' };
 
-// 返回 { category, subcategory, cat, sub }
-// cat: CATEGORIES 中的一级分类对象或 null；sub: 命中的子分类对象或 null
+// 把历史账单的 category/subcategory 规范成「一个分类名」，供统计与展示使用
+// 返回 { category, subcategory, display }；display = 子分类（若有）否则一级分类
 function resolveCategory(bill) {
   const entry = LEGACY_CATEGORY_MAP[bill.category];
   let category = bill.category;
@@ -734,16 +791,20 @@ function resolveCategory(bill) {
     else if (entry.subMap && entry.subMap[subcategory]) subcategory = entry.subMap[subcategory];
   }
   if (LEGACY_SUBCATEGORY_MAP[subcategory]) subcategory = LEGACY_SUBCATEGORY_MAP[subcategory];
-  const cat = CATEGORIES.find(c => c.label === category) || null;
-  const sub = cat && cat.sub ? cat.sub.find(s => s.label === subcategory) || null : null;
-  return { category, subcategory, cat, sub };
+  return { category, subcategory, display: subcategory || category };
 }
 
-// 子分类有 group 用之，否则继承一级分类，再兜底 nonessential
-function resolveGroup(res) {
-  return (res.sub && res.sub.group) || (res.cat && res.cat.group) || 'nonessential';
-}
-const APP_VERSION = '2.8.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.0.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+
+// 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
+const CHANGELOG = [
+  { version: '3.0.0', date: '2026-10-27', items: [
+    '分类改为自定义：记账时直接输入分类名，自动保存到你的分类库',
+    '分类占比图改为单层圆环，按你自己的分类统计',
+    '新增便签区，内容随账号同步',
+    '新增更新通告，可关闭',
+  ]},
+];
 const CURRENCIES = ['HKD','CNY','USD','EUR','GBP','JPY','KRW','AUD','CAD','CHF','SGD','SEK','NZD','THB','MYR'];
 const DEFAULT_DISPLAY_CURRENCIES = ['HKD','USD','EUR','GBP'];
 const CURRENCY_LABELS = {
@@ -759,6 +820,10 @@ const CURRENCY_EMOJI = {
 const STORAGE_CURRENT = 'hku_ledger_current_user';
 const STORAGE_RATES = 'hku_ledger_rates';
 const STORAGE_DISPLAY_CURRENCIES = 'hku_ledger_display_currencies';
+const STORAGE_DISMISSED_VERSION = 'hku_ledger_dismissed_version';
+// 数据库未加列时的降级镜像（云端字段为空时回退到这里）
+const STORAGE_CATEGORY_MIRROR = 'hku_ledger_categories_mirror';
+const STORAGE_NOTE_MIRROR = 'hku_ledger_note_mirror';
 const RATE_CACHE_MS = 5 * 60 * 1000; // 5 minutes
 let rateRefreshTimer = null;
 
@@ -808,11 +873,26 @@ async function getUserData() {
 
   let settings;
   if (settingsRow && !settingsErr) {
+    // 分类：列存在且非 NULL → 直接用（'[]' 表示用户清空过，不再种子化）
+    //       列不存在（数据库还没加列）→ 回退到按账号隔离的本机镜像，仍为空则视为未初始化
+    let cats = null;
+    if (settingsRow.custom_categories != null) {
+      const parsed = safeParseJSON(settingsRow.custom_categories, null);
+      cats = Array.isArray(parsed) ? parsed : [];
+    } else {
+      const mirror = safeParseJSON(localStorage.getItem(mirrorKey(STORAGE_CATEGORY_MIRROR)), null);
+      cats = Array.isArray(mirror) ? mirror : null;
+    }
+    let note = settingsRow.dashboard_note;
+    if (note == null) note = localStorage.getItem(mirrorKey(STORAGE_NOTE_MIRROR)) || '';
+
     settings = {
       defaultCurrency: settingsRow.default_currency,
       monthlyBudget: settingsRow.monthly_budget,
       budgetCurrency: settingsRow.budget_currency,
-      displayCurrencies: JSON.parse(settingsRow.display_currencies || '["HKD","USD","EUR","GBP"]')
+      displayCurrencies: safeParseJSON(settingsRow.display_currencies, [...DEFAULT_DISPLAY_CURRENCIES]),
+      categories: cats,
+      note: note || '',
     };
   } else {
     settings = getDefaultSettings();
@@ -821,7 +901,78 @@ async function getUserData() {
 }
 
 function getDefaultSettings() {
-  return { defaultCurrency: 'HKD', monthlyBudget: 0, budgetCurrency: 'HKD', displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES] };
+  return {
+    defaultCurrency: 'HKD',
+    monthlyBudget: 0,
+    budgetCurrency: 'HKD',
+    displayCurrencies: [...DEFAULT_DISPLAY_CURRENCIES],
+    // null = 从未初始化（需要从历史账单种子化）；[] = 用户主动清空（不再种子化）
+    categories: null,
+    note: '',         // 全局便签
+  };
+}
+
+// 本机镜像按账号隔离，避免同一浏览器上多个账号串数据
+function mirrorKey(base) {
+  return base + ':' + (currentUser || 'anon');
+}
+
+function safeParseJSON(raw, fallback) {
+  try { const v = JSON.parse(raw); return v == null ? fallback : v; }
+  catch { return fallback; }
+}
+
+// 当前用户的分类列表（永远返回数组；null 表示尚未初始化，不在此处改写状态）
+function getCategories() {
+  if (!currentSettings) return [];
+  return Array.isArray(currentSettings.categories) ? currentSettings.categories : [];
+}
+
+// 按名称查颜色；不在分类库里的（例如从设置里删掉了但账单还在）用灰色
+function resolveColor(name) {
+  const hit = getCategories().find(c => c.name === name);
+  return hit ? hit.color : CATEGORY_FALLBACK_COLOR;
+}
+
+// 首次使用（分类库为空）时，从历史账单推导一份分类列表
+// 按叶子级导入：有子分类的账单用子分类名，否则用一级分类名
+function ensureCategoriesSeeded(bills) {
+  if (!currentSettings) return false;
+  // 只认「从未初始化」；用户把分类全删光（[]）不应再被账单复活
+  if (currentSettings.categories !== null) return false;
+  if (!bills || bills.length === 0) return false;
+  const seen = [];
+  for (const b of bills) {
+    const name = resolveCategory(b).display;
+    if (name && !seen.includes(name)) seen.push(name);
+  }
+  if (!seen.length) return false;
+  currentSettings.categories = seen.map((name, i) => ({
+    name,
+    color: CATEGORY_PALETTE[i % CATEGORY_PALETTE.length],
+  }));
+  return true;
+}
+
+// 从配色池里取一个还没被用过的颜色
+function nextCategoryColor() {
+  const used = new Set(getCategories().map(c => c.color));
+  for (const c of CATEGORY_PALETTE) if (!used.has(c)) return c;
+  return CATEGORY_PALETTE[getCategories().length % CATEGORY_PALETTE.length];
+}
+
+// 输入即新建：名字已存在就复用；命中历史分类旧名则拒绝
+function addCategoryIfNew(rawName) {
+  const name = String(rawName || '').trim();
+  if (!name) return { ok: false, reason: '请填写分类名称' };
+  if (name.length > 12) return { ok: false, reason: '分类名最多 12 个字符' };
+  if (LEGACY_CATEGORY_MAP[name]) {
+    return { ok: false, reason: `「${name}」是旧分类名，会自动并入「${LEGACY_CATEGORY_MAP[name].category}」，请换一个` };
+  }
+  const cats = getCategories();
+  if (cats.some(c => c.name === name)) return { ok: true, created: false };
+  cats.push({ name, color: nextCategoryColor() });
+  return { ok: true, created: true };
 }
 
 function getDisplayCurrencies() {
@@ -854,13 +1005,38 @@ async function deleteBillFromCloud(id) {
 
 async function saveSettingsToCloud(settingsData) {
   const { data: { user } } = await sb.auth.getUser();
-  const { error } = await sb.from('user_settings').upsert({
+  const base = {
     user_id: user.id,
     default_currency: settingsData.defaultCurrency,
     monthly_budget: settingsData.monthlyBudget,
     budget_currency: settingsData.budgetCurrency,
     display_currencies: JSON.stringify(settingsData.displayCurrencies),
-  }, { onConflict: 'user_id' });
+  };
+  const extended = {
+    ...base,
+    custom_categories: JSON.stringify(settingsData.categories || []),
+    dashboard_note: settingsData.note || '',
+  };
+
+  // 始终写一份本机镜像（按账号隔离），保证数据库未加列时分类/便签也不会丢
+  try {
+    localStorage.setItem(mirrorKey(STORAGE_CATEGORY_MIRROR), JSON.stringify(settingsData.categories || []));
+    localStorage.setItem(mirrorKey(STORAGE_NOTE_MIRROR), settingsData.note || '');
+  } catch {}
+
+  let { error } = await sb.from('user_settings').upsert(extended, { onConflict: 'user_id' });
+
+  // 新列不存在时（Supabase 报 schema cache / column 错误），退回只写原有的四个字段
+  if (error && /custom_categories|dashboard_note|schema cache|column/i.test(error.message || '')) {
+    const retry = await sb.from('user_settings').upsert(base, { onConflict: 'user_id' });
+    if (retry.error) { console.error('Save settings error:', retry.error); return false; }
+    console.warn('custom_categories / dashboard_note 列不存在，已降级为仅本机保存');
+    if (!window.__localOnlyWarned) {
+      window.__localOnlyWarned = true;
+      toast('ℹ️ 分类和便签暂时只保存在本机（数据库还没加列）');
+    }
+    return 'local';
+  }
   if (error) { console.error('Save settings error:', error); return false; }
   return true;
 }
@@ -1058,6 +1234,7 @@ async function showDashboard() {
   show($('dashboard'));
   currentUser = getCurrentUser();
   $('navUser').textContent = '👋 ' + currentUser;
+  renderChangelog();
 
   // Load Chart.js in background (don't block)
   loadChartJs();
@@ -1081,11 +1258,15 @@ async function showDashboard() {
   if (!localStorage.getItem(STORAGE_DISPLAY_CURRENCIES)) {
     saveDisplayCurrencies(currentSettings.displayCurrencies);
   }
+  // 首次使用 v3：从历史账单推导用户的分类库
+  if (ensureCategoriesSeeded(userData.bills)) {
+    await saveSettingsToCloud(currentSettings);
+  }
   updateRateUI();
 
   // Setup form defaults
   $('addDate').value = new Date().toISOString().slice(0, 10);
-  populateCategorySelect($('addCategory'));
+  renderCategoryDatalist();
   populateCurrencySelect($('addCurrency'), currentSettings.defaultCurrency);
 
   // Setup settings modal
@@ -1133,6 +1314,10 @@ async function refreshAll() {
 
   // Bill list
   updateBillList(filteredBills, settings);
+
+  // 分类建议 & 便签（云端的设置可能刚被其它设备改过）
+  renderCategoryDatalist();
+  renderNote();
 }
 
 function updateRateUI() {
@@ -1300,11 +1485,9 @@ function updateBudgetStats(monthTotal, budget, currency) {
 function updateBudgetTop3(currency, monthBills) {
   const catTotals = {};
   for (const b of monthBills) {
-    const res = resolveCategory(b);
-    const cat = res.cat;
-    if (!cat) continue;
-    const key = cat.key;
-    catTotals[key] = (catTotals[key] || 0) + convert(b.amount, b.currency, currency, rateData);
+    const name = resolveCategory(b).display;
+    if (!name) continue;
+    catTotals[name] = (catTotals[name] || 0) + convert(b.amount, b.currency, currency, rateData);
   }
   // Sort and take top 3
   const sorted = Object.entries(catTotals)
@@ -1318,10 +1501,9 @@ function updateBudgetTop3(currency, monthBills) {
   }
 
   $('budgetTop3').innerHTML = '<span style="margin-right:8px;font-weight:600">📊 本月TOP3</span>' +
-    sorted.map(([key, amount]) => {
-      const cat = CATEGORIES.find(c => c.key === key);
-      return `<span class="budget-top3-item">${cat ? cat.emoji : ''} ${cat ? cat.label : key} <b>${formatCurrency(amount, currency)}</b></span>`;
-    }).join('');
+    sorted.map(([name, amount]) =>
+      `<span class="budget-top3-item"><span class="legend-dot" style="display:inline-block;vertical-align:middle;margin-right:5px;background:${resolveColor(name)}"></span>${escHtml(name)} <b>${formatCurrency(amount, currency)}</b></span>`
+    ).join('');
 }
 
 function startEditBudget() {
@@ -1350,43 +1532,20 @@ function cancelEditBudget() {
 }
 
 function updateChart(monthBills, settings) {
-  // Aggregate — 中环按一级分类、外环按子分类（有子分类的分类拆片）
+  // 单层圆环：直接按用户自己的分类聚合
   const totals = {};
-  for (const cat of CATEGORIES) {
-    totals[cat.key] = 0;
-    if (cat.sub) for (const s of cat.sub) totals[cat.key + '_' + s.key] = 0;
-  }
-
-  let essentialTotal = 0, nonessentialTotal = 0;
   for (const b of monthBills) {
-    const res = resolveCategory(b);
-    if (!res.cat) continue;
-    const amt = convert(b.amount, b.currency, settings.budgetCurrency, rateData);
-    totals[res.cat.key] += amt;
-    if (res.cat.sub && res.sub) totals[res.cat.key + '_' + res.sub.key] += amt;
-    if (resolveGroup(res) === 'essential') essentialTotal += amt; else nonessentialTotal += amt;
+    const name = resolveCategory(b).display;
+    if (!name) continue;
+    totals[name] = (totals[name] || 0) + convert(b.amount, b.currency, settings.budgetCurrency, rateData);
   }
 
-  // Build items: 外环 = 叶子切片（有子分类的用子分类名，无子分类的用一级分类名）
-  const items = [];
-  for (const cat of CATEGORIES) {
-    if (cat.sub) {
-      for (const s of cat.sub) {
-        const k = cat.key + '_' + s.key;
-        if (totals[k] > 0) items.push({ key: k, label: s.label, emoji: cat.emoji, color: s.color, group: s.group || cat.group });
-      }
-    } else {
-      if (totals[cat.key] > 0) items.push({ key: cat.key, label: cat.label, emoji: cat.emoji, color: cat.color, group: cat.group });
-    }
-  }
-  // 总额只按一级分类键累加（子分类键是重复计数）
-  const total = CATEGORIES.reduce((s, cat) => s + totals[cat.key], 0);
+  const items = Object.entries(totals)
+    .filter(([, v]) => v > 0)
+    .map(([name, amount]) => ({ name, amount, color: resolveColor(name) }))
+    .sort((a, b) => b.amount - a.amount);
 
-  // 排序：必要子类在前、非必要子类在后（对齐内环大类弧段），组内按金额降序
-  items.sort((a, b) => {
-    if (a.group !== b.group) return a.group === 'essential' ? -1 : 1;
-    return (totals[b.key] || 0) - (totals[a.key] || 0);
-  });
+  const total = items.reduce((s, it) => s + it.amount, 0);
 
   // Destroy previous chart
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
@@ -1402,37 +1561,24 @@ function updateChart(monthBills, settings) {
 
   // If Chart.js not loaded yet, show text summary and retry
   if (typeof Chart === 'undefined') {
-    // Show legend only, skip chart
-    $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
-    // Retry chart loading
+    $('categoryLegend').innerHTML = buildLegendHTML(items, total, settings.budgetCurrency);
     loadChartJs().then(ok => { if (ok) refreshAll(); });
     return;
   }
 
-  // Doughnut chart — 内环：必要 vs 非必要；外环：叶子分类切片
+  // 单层圆环：每个切片就是一个用户分类
   const ctx = $('categoryChart').getContext('2d');
   chartInstance = new Chart(ctx, {
     type: 'doughnut',
     data: {
-      // labels 顺序必须与两个 dataset 切片顺序一致：内环两片在前，外环叶子在后
-      labels: ['必要消费', '非必要消费',
-        ...items.map(c => c.emoji + ' ' + c.label)],
-      datasets: [
-        {
-          data: [essentialTotal, nonessentialTotal],
-          backgroundColor: [GROUP_COLORS.essential, GROUP_COLORS.nonessential],
-          borderColor: '#fff',
-          borderWidth: 2,
-          hoverBorderWidth: 3,
-        },
-        {
-          data: items.map(c => totals[c.key]),
-          backgroundColor: items.map(c => c.color),
-          borderColor: '#fff',
-          borderWidth: 2,
-          hoverBorderWidth: 3,
-        }
-      ]
+      labels: items.map(c => c.name),
+      datasets: [{
+        data: items.map(c => c.amount),
+        backgroundColor: items.map(c => c.color),
+        borderColor: '#fff',
+        borderWidth: 2,
+        hoverBorderWidth: 3,
+      }]
     },
     options: {
       responsive: true,
@@ -1440,48 +1586,36 @@ function updateChart(monthBills, settings) {
       plugins: {
         legend: { display: false },
         tooltip: {
-          // 务必清空默认 title：多环 doughnut 下默认 title 取共享 labels[dataIndex]，会错位显示一级分类名
           callbacks: {
-            title: function() { return ''; }, // 不显示标题行
+            // 单环 doughnut 默认 title 也会取 labels[dataIndex]，会和下面的 label 重复
+            title: function() { return ''; },
             label: function(ctx) {
-              // 各层名称按 datasetIndex 映射（Chart.js 多 doughnut 的 ctx.label 不按 dataset 偏移）
-              const layerNames = [
-                ['必要消费', '非必要消费'],                 // dataset 0：内环
-                items.map(c => c.emoji + ' ' + c.label)     // dataset 1：外环叶子
-              ][ctx.datasetIndex];
-              const name = (layerNames && layerNames[ctx.dataIndex]) || '';
+              const item = items[ctx.dataIndex];
+              const name = item ? item.name : ctx.label;
               const pct = total > 0 ? (ctx.raw / total * 100).toFixed(1) : 0;
               return ' ' + name + ': ' + formatCurrency(ctx.raw, settings.budgetCurrency) + '  (' + pct + '%)';
             }
           }
         }
       },
-      cutout: '60%',
-      spacing: 2, // 切片间细缝，视觉更精致
+      cutout: '58%',
+      spacing: 2,
     }
   });
 
   // Legend
-  $('categoryLegend').innerHTML = buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, settings.budgetCurrency);
+  $('categoryLegend').innerHTML = buildLegendHTML(items, total, settings.budgetCurrency);
 }
 
-// 图例：必要/非必要（方点）+ 分类明细（圆点），Chart.js 未加载时也走此函数
-function buildLegendHTML(essentialTotal, nonessentialTotal, items, totals, total, currency) {
+// 图例：按金额降序的分类列表（Chart.js 未加载时也走此函数）
+function buildLegendHTML(items, total, currency) {
   const pctOf = v => total > 0 ? (v / total * 100).toFixed(1) : 0;
-  const groupRow = (label, val, color) => `
-    <div class="category-legend-item">
-      <span class="legend-left"><span class="legend-dot legend-dot-square" style="background:${color}"></span>${label}</span>
-      <span class="legend-right">${formatCurrency(val, currency)} (${pctOf(val)}%)</span>
-    </div>`;
-  let html = '<div class="legend-section-title">必要 vs 非必要</div>';
-  html += groupRow('必要消费', essentialTotal, GROUP_COLORS.essential);
-  html += groupRow('非必要消费', nonessentialTotal, GROUP_COLORS.nonessential);
-  html += '<div class="legend-section-title">分类明细</div>';
+  let html = '';
   for (const item of items) {
     html += `
       <div class="category-legend-item">
-        <span class="legend-left"><span class="legend-dot" style="background:${item.color}"></span>${item.emoji} ${item.label}</span>
-        <span class="legend-right">${formatCurrency(totals[item.key], currency)} (${pctOf(totals[item.key])}%)</span>
+        <span class="legend-left"><span class="legend-dot" style="background:${item.color}"></span>${escHtml(item.name)}</span>
+        <span class="legend-right">${formatCurrency(item.amount, currency)} (${pctOf(item.amount)}%)</span>
       </div>`;
   }
   return html;
@@ -1503,16 +1637,14 @@ function updateBillList(bills, settings) {
   let html = '';
   for (const b of sorted) {
     const res = resolveCategory(b);
-    const cat = res.cat || {};
-    let dotColor = cat.color || '#9CA3AF';
-    if (res.sub && res.sub.color) dotColor = res.sub.color;
+    const dotColor = resolveColor(res.display);
     const converted = convert(b.amount, b.currency, settings.budgetCurrency, rateData);
     html += `
       <div class="bill-item">
         <div class="bill-left">
           <span class="bill-cat-dot" style="background:${dotColor}"></span>
           <div class="bill-info">
-            <div class="bill-payee">${cat.emoji || ''} ${res.category}${res.subcategory ? ' › ' + res.subcategory : ''}</div>
+            <div class="bill-payee">${escHtml(res.display)}</div>
             <div class="bill-meta">${b.date}${b.payee ? ' · ' + escHtml(b.payee) : ''}</div>
           </div>
         </div>
@@ -1532,6 +1664,15 @@ function escHtml(str) {
   const div = document.createElement('div');
   div.textContent = str;
   return div.innerHTML;
+}
+
+// 用于 HTML 属性值（escHtml 不转义引号，直接放进 value="..." 会被截断）
+function escAttr(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
 }
 
 async function populateMonthFilter() {
@@ -1564,8 +1705,7 @@ async function addBill() {
   const amountStr = $('addAmount').value;
   const currency = $('addCurrency').value;
   const payee = $('addPayee').value.trim();
-  const category = $('addCategory').value;
-  const subcategory = $('addSubcategory').value;
+  const category = $('addCategory').value.trim();
 
   // Validation
   if (!date) { toast('⚠️ 请选择日期'); return; }
@@ -1577,11 +1717,16 @@ async function addBill() {
     payeeWeight += /[㐀-鿿豈-﫿]/.test(ch) ? 1 : 1 / 3;
   }
   if (payeeWeight > 10) { toast('⚠️ 用途最多10个汉字或30个英文字符'); return; }
-  if (!category) { toast('⚠️ 请选择分类'); return; }
+  if (!category) { toast('⚠️ 请填写分类'); return; }
 
-  // Check if subcategory required
-  const catObj = CATEGORIES.find(c => c.label === category);
-  if (catObj && catObj.sub && !subcategory) { toast('⚠️ 请选择子分类'); return; }
+  // 输入即新建：不在分类库里就自动加入并分配颜色
+  const added = addCategoryIfNew(category);
+  if (!added.ok) { toast('⚠️ ' + added.reason); return; }
+  if (added.created) {
+    const saved = await saveSettingsToCloud(currentSettings);
+    if (saved === false) { toast('⚠️ 分类保存失败，请检查网络后重试'); return; }
+    renderCategoryDatalist();
+  }
 
   const bill = {
     id: generateId(),
@@ -1590,7 +1735,7 @@ async function addBill() {
     currency: currency,
     payee: payee || '',
     category: category,
-    subcategory: subcategory || '',
+    subcategory: '',
     note: '',
     createdAt: Date.now(),
   };
@@ -1602,8 +1747,6 @@ async function addBill() {
   $('addPayee').value = '';
   $('addDate').value = new Date().toISOString().slice(0, 10);
   $('addCategory').value = '';
-  $('addSubcategory').value = '';
-  $('subcatGroup').style.display = 'none';
 
   // Refresh - keep view on current month
   populateMonthFilter();
@@ -1622,6 +1765,163 @@ async function deleteBill(id) {
 }
 
 // ==================== SETTINGS ====================
+// ==================== NOTE ====================
+let noteSaveTimer = null;
+
+function renderNote() {
+  const el = $('noteInput');
+  if (!el) return;
+  if (document.activeElement === el || noteSaveTimer) return; // 正在输入或待保存时不要覆盖
+  el.value = (currentSettings && currentSettings.note) || '';
+}
+
+function onNoteInput() {
+  const status = $('noteStatus');
+  if (status) status.textContent = '输入中…';
+  clearTimeout(noteSaveTimer);
+  noteSaveTimer = setTimeout(saveNote, 800);
+}
+
+async function saveNote() {
+  noteSaveTimer = null;
+  if (!currentSettings) return; // 设置还没加载完：绝不能凭空造一份默认值覆盖云端
+  const el = $('noteInput');
+  if (!el) return;
+  currentSettings.note = el.value.slice(0, 2000);
+  const status = $('noteStatus');
+  const result = await saveSettingsToCloud(currentSettings);
+  if (!status) return;
+  status.textContent = result === false ? '保存失败' : (result === 'local' ? '已存本机' : '已保存');
+  setTimeout(() => {
+    if (status.textContent === '已保存' || status.textContent === '已存本机') status.textContent = '';
+  }, 1800);
+}
+
+// ==================== CHANGELOG ====================
+function renderChangelog() {
+  const banner = $('changelogBanner');
+  if (!banner) return;
+  const latest = CHANGELOG[0];
+  if (!latest) { banner.style.display = 'none'; return; }
+  if (localStorage.getItem(STORAGE_DISMISSED_VERSION) === latest.version) {
+    banner.style.display = 'none';
+    return;
+  }
+  $('clVersion').textContent = latest.version;
+  $('clDate').textContent = latest.date;
+  $('clList').innerHTML = latest.items.map(t => `<li>${escHtml(t)}</li>`).join('');
+  banner.style.display = '';
+}
+
+function dismissChangelog() {
+  const latest = CHANGELOG[0];
+  if (latest) localStorage.setItem(STORAGE_DISMISSED_VERSION, latest.version);
+  const banner = $('changelogBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+// ==================== CATEGORY MANAGER ====================
+async function renderCategoryManager() {
+  const box = $('catManager');
+  if (!box) return;
+  const cats = getCategories();
+  if (!cats.length) {
+    box.innerHTML = '<div class="cat-manager-empty">还没有分类。记账时输入一个名字就会自动创建。</div>';
+    return;
+  }
+  let bills = [];
+  try { const ud = await getUserData(); bills = ud.bills || []; } catch (e) { console.error(e); }
+  const counts = {};
+  for (const b of bills) {
+    const name = resolveCategory(b).display;
+    counts[name] = (counts[name] || 0) + 1;
+  }
+  box.innerHTML = cats.map((c, i) => `
+    <div class="cat-manager-row">
+      <span class="cat-manager-dot" style="background:${c.color}"></span>
+      <span class="cat-manager-name">${escHtml(c.name)}</span>
+      <span class="cat-manager-count">${counts[c.name] || 0} 笔</span>
+      <button class="cat-manager-btn" onclick="promptRenameCategory(${i})">改名</button>
+      <button class="cat-manager-btn danger" onclick="deleteCategory(${i})">删除</button>
+    </div>`).join('');
+}
+
+function promptRenameCategory(index) {
+  const cats = getCategories();
+  const cat = cats[index];
+  if (!cat) return;
+  const input = prompt('新的分类名称（该分类下的历史账单会一起改）', cat.name);
+  if (input == null) return;
+  const name = input.trim();
+  if (!name) { toast('⚠️ 名称不能为空'); return; }
+  if (name === cat.name) return;
+  if (name.length > 12) { toast('⚠️ 分类名最多 12 个字符'); return; }
+  if (cats.some((c, i) => i !== index && c.name === name)) { toast('⚠️ 已存在同名分类'); return; }
+  if (LEGACY_CATEGORY_MAP[name]) { toast('⚠️ 该名称与历史分类冲突，请换一个'); return; }
+  renameCategory(cat.name, name);
+}
+
+async function renameCategory(oldName, newName) {
+  const cat = getCategories().find(c => c.name === oldName);
+  if (!cat) return;
+  cat.name = newName;
+  const saved = await saveSettingsToCloud(currentSettings);
+  if (saved === false) {
+    cat.name = oldName; // 回滚：别让界面显示成功而数据库没变
+    renderCategoryManager();
+    toast('⚠️ 分类保存失败，请检查网络');
+    return;
+  }
+
+  // 同步历史账单：统一写成扁平分类并清空子分类，每 100 条一批
+  let updated = 0, failed = 0;
+  try {
+    const ud = await getUserData();
+    const ids = (ud.bills || [])
+      .filter(b => resolveCategory(b).display === oldName)
+      .map(b => b.id);
+    for (let i = 0; i < ids.length; i += 100) {
+      const chunk = ids.slice(i, i + 100);
+      const { error } = await sb.from('bills')
+        .update({ category: newName, subcategory: '' })
+        .in('id', chunk);
+      if (error) failed += chunk.length; else updated += chunk.length;
+    }
+  } catch (e) { console.error('rename bills failed', e); }
+
+  toast(failed ? `✅ 改名成功，${updated} 笔已更新，${failed} 笔失败` : `✅ 改名成功，${updated} 笔账单已更新`);
+  renderCategoryManager();
+  renderCategoryDatalist();
+  refreshAll();
+}
+
+async function deleteCategory(index) {
+  const cats = getCategories();
+  const cat = cats[index];
+  if (!cat) return;
+  let count = 0;
+  try {
+    const ud = await getUserData();
+    count = (ud.bills || []).filter(b => resolveCategory(b).display === cat.name).length;
+  } catch (e) { console.error(e); }
+  const msg = count > 0
+    ? `删除「${cat.name}」？\n\n该分类下有 ${count} 笔账单。账单不会被删除，仍会以灰色显示在图表里。`
+    : `删除「${cat.name}」？`;
+  if (!confirm(msg)) return;
+  const removed = cats.splice(index, 1)[0];
+  const saved = await saveSettingsToCloud(currentSettings);
+  if (saved === false) {
+    cats.splice(index, 0, removed); // 放回原位
+    renderCategoryManager();
+    toast('⚠️ 分类保存失败，请检查网络');
+    return;
+  }
+  toast('✅ 分类已删除');
+  renderCategoryManager();
+  renderCategoryDatalist();
+  refreshAll();
+}
+
 function openSettings() {
   $('setCurrency').value = currentSettings ? currentSettings.defaultCurrency : 'HKD';
   $('setNewUsername').value = '';
@@ -1629,6 +1929,7 @@ function openSettings() {
   $('setNewPassword2').value = '';
   $('settingsError').style.display = 'none';
   $('settingsModal').classList.add('active');
+  renderCategoryManager();
 }
 
 function closeSettings() {
@@ -1681,33 +1982,20 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// ==================== HELPERS ====================
-function onCategoryChange() {
-  const category = $('addCategory').value;
-  const catObj = CATEGORIES.find(c => c.label === category);
-  const subcatGroup = $('subcatGroup');
-  const subcatSelect = $('addSubcategory');
-  if (catObj && catObj.sub) {
-    subcatGroup.style.display = '';
-    // 优先默认选中 key 为 other 的兜底子分类（如线上消费→其他），否则选中第一个
-    const defaultSub = catObj.sub.find(s => s.key === 'other') || catObj.sub[0];
-    let html = '';
-    for (const s of catObj.sub) {
-      html += `<option value="${s.label}" ${s.key === defaultSub.key ? 'selected' : ''}>${s.label}</option>`;
-    }
-    subcatSelect.innerHTML = html;
-  } else {
-    subcatGroup.style.display = 'none';
-    subcatSelect.value = '';
-  }
-}
+// 便签自动保存
+document.addEventListener('DOMContentLoaded', () => {
+  const noteEl = $('noteInput');
+  if (noteEl) noteEl.addEventListener('input', onNoteInput);
+});
 
-function populateCategorySelect(select) {
-  let html = '<option value="">请选择分类</option>';
-  for (const cat of CATEGORIES) {
-    html += `<option value="${cat.label}">${cat.emoji} ${cat.label}${cat.hint ? '（' + cat.hint + '）' : ''}</option>`;
-  }
-  select.innerHTML = html;
+// ==================== HELPERS ====================
+// 刷新记账表单的分类输入建议（datalist）
+function renderCategoryDatalist() {
+  const dl = $('categoryOptions');
+  if (!dl) return;
+  dl.innerHTML = getCategories()
+    .map(c => `<option value="${escAttr(c.name)}"></option>`)
+    .join('');
 }
 
 function populateCurrencySelect(select, selected) {
@@ -1729,22 +2017,22 @@ function goBackFromAnalysis() {
   window.location.assign(window.location.pathname);
 }
 
-function showBillAnalysis() {
+async function showBillAnalysis() {
   hide($('authPage'));
   hide($('dashboard'));
   show($('billAnalysis'));
   document.title = 'Living Expenses — 账单分析';
 
-  // Populate filter dropdowns
+  // Populate filter dropdowns — 用户分类 + 账单里出现过但已从分类库删除的分类
+  let allBills = [];
+  try { const ud = await getUserData(); allBills = ud.bills || []; } catch (e) { console.error(e); }
+  const known = getCategories().map(c => c.name);
+  const orphans = [...new Set(allBills.map(b => resolveCategory(b).display))]
+    .filter(n => n && !known.includes(n));
+
   let catHTML = '<option value="">全部分类</option>';
-  for (const cat of CATEGORIES) {
-    catHTML += `<option value="${cat.label}">${cat.emoji} ${cat.label}${cat.hint ? '（' + cat.hint + '）' : ''}</option>`;
-    if (cat.sub) {
-      for (const s of cat.sub) {
-        catHTML += `<option value="${cat.label} › ${s.label}">  └ ${s.label}</option>`;
-      }
-    }
-  }
+  for (const n of known) catHTML += `<option value="${escAttr(n)}">${escHtml(n)}</option>`;
+  for (const n of orphans) catHTML += `<option value="${escAttr(n)}">${escHtml(n)}（已移除）</option>`;
   $('baCategory').innerHTML = catHTML;
 
   let curHTML = '<option value="">全部币种</option>';
@@ -1776,17 +2064,7 @@ async function getFilteredBills() {
 
   if (dateFrom) bills = bills.filter(b => b.date >= dateFrom);
   if (dateTo) bills = bills.filter(b => b.date <= dateTo);
-  if (category) {
-    if (category.includes(' › ')) {
-      const parts = category.split(' › ');
-      bills = bills.filter(b => {
-        const r = resolveCategory(b);
-        return r.category === parts[0] && r.subcategory === parts[1];
-      });
-    } else {
-      bills = bills.filter(b => resolveCategory(b).category === category);
-    }
-  }
+  if (category) bills = bills.filter(b => resolveCategory(b).display === category);
   if (currency) bills = bills.filter(b => b.currency === currency);
   if (keyword) bills = bills.filter(b => (b.payee || '').toLowerCase().includes(keyword));
   if (!isNaN(amtMin)) bills = bills.filter(b => b.amount >= amtMin);
@@ -1845,14 +2123,13 @@ async function renderBillAnalysis() {
   let rows = '';
   for (const b of bills) {
     const res = resolveCategory(b);
-    const cat = res.cat || {};
     const converted = convert(b.amount, b.currency, currency, rateData);
     rows += `<tr>
       <td>${b.date}</td>
       <td>${CURRENCY_EMOJI[b.currency]||''} ${b.amount.toFixed(2)}</td>
       <td>${b.currency !== currency ? formatCurrency(converted, currency) : '—'}</td>
       <td>${escHtml(b.payee || '（未填写）')}</td>
-      <td>${cat.emoji||''} ${res.category}${res.subcategory?' › '+res.subcategory:''}</td>
+      <td>${escHtml(res.display)}</td>
       <td><button class="ba-del-btn" onclick="deleteBillFromAnalysis('${b.id}')" title="删除">🗑️</button></td>
     </tr>`;
   }
@@ -1906,7 +2183,11 @@ async function init() {
     }
     currentUser = session.user.email;
     rateData = await fetchRates();
-    showBillAnalysis();
+    // 直接进入分析页时也要先把 settings 拉回来，否则分类筛选是空的
+    const ud = await getUserData();
+    currentSettings = ud.settings;
+    if (ensureCategoriesSeeded(ud.bills)) await saveSettingsToCloud(currentSettings);
+    await showBillAnalysis();
     return;
   }
 
