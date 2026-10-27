@@ -268,18 +268,20 @@ body {
 }
 /* 右上角删除角标：默认半透明，悬停加深 */
 .chip-x {
-  position: absolute; top: -7px; right: -7px;
-  width: 18px; height: 18px; border-radius: 50%;
-  background: var(--danger); color: #fff;
-  font-size: 13px; line-height: 17px; text-align: center;
-  font-weight: 700; cursor: pointer; user-select: none;
-  opacity: .62; transition: opacity .15s, transform .15s;
-  border: 2px solid var(--surface);
-  box-shadow: 0 1px 3px rgba(0,0,0,.18);
+  position: absolute; top: -5px; right: -5px;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: var(--text-muted); color: #fff;
+  font-size: 11px; line-height: 13px; text-align: center;
+  font-weight: 600; cursor: pointer; user-select: none;
+  opacity: 0; transition: opacity .12s, background .12s;
+  border: 1px solid var(--surface);
 }
-.chip-x::before { content: ''; position: absolute; inset: -9px; } /* 扩大点击区域 */
-.cat-chip:hover .chip-x { opacity: 1; }
-.chip-x:hover { transform: scale(1.15); opacity: 1; }
+.chip-x::before { content: ''; position: absolute; inset: -5px; } /* 略微扩大可点范围 */
+/* 默认完全隐藏，悬停整个标签时才浮现 */
+.cat-chip:hover .chip-x { opacity: .85; }
+.chip-x:hover { opacity: 1; background: var(--danger); }
+/* 触屏设备没有 hover，保留一个很淡的常驻提示 */
+@media (hover: none) { .chip-x { opacity: .45; } }
 .cat-chip::before {
   content: ''; width: 8px; height: 8px; border-radius: 50%;
   background: var(--chip-color, var(--text-muted)); flex-shrink: 0;
@@ -636,7 +638,7 @@ body {
           <select id="addCurrency"></select>
         </div>
         <div class="fg fg-payee">
-          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填，中文≤10字，英文≤30字符)</span></label>
+          <label>🏪 用途 <span style="color:var(--text-muted);font-weight:400">(选填)</span></label>
           <input type="text" id="addPayee" placeholder="买什么了？" maxlength="30">
         </div>
         <div class="fg fg-category">
@@ -851,10 +853,14 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.0.3'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.0.4'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.0.4', date: '2026-10-27', items: [
+    '删除键改为悬停分类标签时才出现，缩小并改成浅灰色，避免误触',
+    '「用途」栏提示简化为「(选填)」',
+  ]},
   { version: '3.0.3', date: '2026-10-27', items: [
     '分类标签右上角新增 ×，可直接删除分类，不用再进设置页',
     '删除前会提示该分类下有多少笔账单',
