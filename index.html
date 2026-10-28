@@ -4,14 +4,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#0F3D2E">
+<meta name="theme-color" content="#16342A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="记账">
+<meta name="apple-mobile-web-app-title" content="账房">
 <meta name="format-detection" content="telephone=no">
-<title>Living Expenses — 个人记账</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📒</text></svg>">
+<title>账房 — 个人记账</title>
+<link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+<link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="manifest" href="./manifest.json">
 <style>
@@ -60,7 +61,9 @@ body {
   width: 100%; max-width: 420px;
 }
 .auth-header { text-align: center; margin-bottom: 32px; }
-.auth-header .logo { font-size: 40px; margin-bottom: 8px; }
+/* 品牌标记：与 App 图标同源（icons/icon.svg），尺寸只在这里改 */
+.logo-mark { display: block; width: 30px; height: 30px; flex: 0 0 auto; }
+.auth-header .logo-mark { width: 56px; height: 56px; margin: 0 auto 12px; }
 .auth-header h1 { font-size: 24px; font-weight: 700; color: var(--text); }
 .auth-header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
 
@@ -119,7 +122,7 @@ body {
   display: flex; align-items: center; justify-content: space-between;
 }
 .nav-left { display: flex; align-items: center; gap: 10px; }
-.nav-left .logo { font-size: 28px; }
+.nav-left .logo-mark { width: 30px; height: 30px; }
 .nav-left h1 { font-size: 18px; font-weight: 700; }
 .ver-badge {
   font-size: 11px; font-weight: 600; color: var(--primary);
@@ -491,7 +494,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     top: env(safe-area-inset-top, 0px);
   }
   .nav-left { gap: 8px; min-width: 0; }
-  .nav-left .logo { font-size: 18px; }
+  .nav-left .logo-mark { width: 24px; height: 24px; }
   .nav-left h1 { font-size: 16px; white-space: nowrap; }
   .nav-right .user-info,
   .nav-right .btn-sm { display: none; }
@@ -712,15 +715,38 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 </head>
 <body>
 
+<!-- 品牌标记「账房」：算盘图形，与 icons/icon.svg 同一份几何，改一处要同步改另一处 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <linearGradient id="zfBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1A4234"/>
+      <stop offset="1" stop-color="#0F3228"/>
+    </linearGradient>
+    <g id="zfMark">
+      <rect width="100" height="100" rx="22" fill="url(#zfBg)"/>
+      <rect x="19.4" y="17.4" width="61.2" height="65.2" rx="2.4" fill="none" stroke="#E8E1CF" stroke-width="2.8"/>
+      <g fill="#E8E1CF">
+        <rect x="28.7" y="21.54" width="2.6" height="52.82" rx="1.3"/>
+        <rect x="48.7" y="21.54" width="2.6" height="52.82" rx="1.3"/>
+        <rect x="68.7" y="21.54" width="2.6" height="52.82" rx="1.3"/>
+        <circle cx="30" cy="26.94" r="5.4"/><circle cx="50" cy="26.94" r="5.4"/><circle cx="70" cy="26.94" r="5.4"/>
+        <circle cx="30" cy="51.32" r="5.4"/><circle cx="50" cy="51.32" r="5.4"/><circle cx="70" cy="51.32" r="5.4"/>
+        <circle cx="30" cy="68.96" r="5.4"/><circle cx="50" cy="68.96" r="5.4"/><circle cx="70" cy="68.96" r="5.4"/>
+      </g>
+      <rect x="18" y="35.08" width="64" height="4" fill="#C0A26B"/>
+    </g>
+  </defs>
+</svg>
+
 <!-- ==================== Auth Pages ==================== -->
 <div class="auth-page" id="authPage">
   <div class="auth-card">
     <!-- Login Form -->
     <div id="loginForm">
       <div class="auth-header">
-        <div class="logo">📒</div>
-        <h1>Living Expenses</h1>
-        <p>轻松管理每月开销</p>
+        <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+        <h1>账房</h1>
+        <p>轻轻记一笔，心里有本账</p>
       </div>
       <div class="form-group">
         <label>👤 用户名</label>
@@ -738,7 +764,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     <!-- Register Form -->
     <div id="registerForm" style="display:none">
       <div class="auth-header">
-        <div class="logo">✨</div>
+        <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
         <h1>创建账户</h1>
         <p>开始记录你的大学生活开销</p>
       </div>
@@ -801,8 +827,8 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   <!-- Navbar -->
   <nav class="navbar">
     <div class="nav-left">
-      <span class="logo">📒</span>
-      <h1>Living Expenses</h1>
+      <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+      <h1>账房</h1>
       <span class="ver-badge" id="verBadge" title="查看更新历史" onclick="openChangelogHistory()"></span>
     </div>
     <div class="nav-right">
@@ -938,8 +964,8 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 <div class="bill-analysis" id="billAnalysis" style="display:none">
   <nav class="navbar">
     <div class="nav-left">
-      <span class="logo">📒</span>
-      <h1>Living Expenses — 历史账单&amp;分析</h1>
+      <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+      <h1>账房 — 历史账单&amp;分析</h1>
     </div>
     <div class="nav-right">
       <button class="btn btn-outline" onclick="goBackFromAnalysis()" style="padding:10px 24px;font-size:15px;font-weight:700">← 返回主页</button>
@@ -1120,10 +1146,15 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.2.6'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.3.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.3.0', date: '2026-10-28', items: [
+    '改名为「账房」，全站图标与文案同步更新',
+    '新图标：墨绿底 + 宣纸白算盘 + 黄铜横梁，替换原来的白账本',
+    '导航栏、登录页的图标换成与 App 图标同源的矢量标记',
+  ]},
   { version: '3.2.6', date: '2026-10-28', items: [
     '分析页四个统计卡统一格式：货币单位一行、金额一行，高度对齐',
     '金额不再被拆成两行，四个卡片并排显示',
@@ -2750,7 +2781,7 @@ async function showBillAnalysis() {
   hide($('authPage'));
   hide($('dashboard'));
   show($('billAnalysis'));
-  document.title = 'Living Expenses — 账单分析';
+  document.title = '账房 — 账单分析';
 
   // Populate filter dropdowns — 用户分类 + 账单里出现过但已从分类库删除的分类
   let allBills = [];
@@ -2960,7 +2991,7 @@ async function init() {
     badge.textContent = 'v' + APP_VERSION + ' ▾';
     badge.style.cursor = 'pointer';
   }
-  console.log('Living Expenses v' + APP_VERSION);
+  console.log('账房 v' + APP_VERSION);
 
   // Check Supabase session first
   const { data: { session } } = await sb.auth.getSession();

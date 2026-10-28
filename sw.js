@@ -1,7 +1,7 @@
-/* Service Worker — Living Expenses PWA
+/* Service Worker — 账房 PWA
  * 每次发版必须同步修改 VERSION，否则旧缓存会盖住新代码。
  */
-const VERSION = '3.2.6';
+const VERSION = '3.3.0';
 
 const CACHE = 'living-expenses-' + VERSION;
 
@@ -11,6 +11,7 @@ const PRECACHE = [
   './supabase.min.js',
   './chart.umd.min.js',
   './manifest.json',
+  './icons/icon.svg',
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',

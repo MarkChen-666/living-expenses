@@ -1,13 +1,13 @@
 {
-  "name": "Living Expenses — 个人记账",
-  "short_name": "记账",
+  "name": "账房 — 个人记账",
+  "short_name": "账房",
   "description": "个人记账与消费分析",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#F3F4F6",
-  "theme_color": "#0F3D2E",
+  "theme_color": "#16342A",
   "lang": "zh-HK",
   "icons": [
     {
