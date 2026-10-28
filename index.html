@@ -4,14 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="color-scheme" content="light">
-<meta name="theme-color" content="#16342A">
+<meta name="theme-color" content="#1E3A4A">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="账房">
 <meta name="format-detection" content="telephone=no">
 <title>账房 — 个人记账</title>
-<link rel="icon" type="image/svg+xml" href="./icons/icon.svg">
+<link rel="icon" type="image/png" sizes="32x32" href="./icons/icon-32.png">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 <link rel="manifest" href="./manifest.json">
@@ -61,9 +61,9 @@ body {
   width: 100%; max-width: 420px;
 }
 .auth-header { text-align: center; margin-bottom: 32px; }
-/* 品牌标记：与 App 图标同源（icons/icon.svg），尺寸只在这里改 */
+/* 品牌标记：与 App 图标同源（icons/icon-nav.png），尺寸只在这里改 */
 .logo-mark { display: block; width: 30px; height: 30px; flex: 0 0 auto; }
-.auth-header .logo-mark { width: 56px; height: 56px; margin: 0 auto 12px; }
+.auth-header .logo-mark { width: 60px; height: 60px; margin: 0 auto 12px; }
 .auth-header h1 { font-size: 24px; font-weight: 700; color: var(--text); }
 .auth-header p { font-size: 14px; color: var(--text-secondary); margin-top: 4px; }
 
@@ -715,36 +715,13 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 </head>
 <body>
 
-<!-- 品牌标记「账房」：算盘图形，与 icons/icon.svg 同一份几何，改一处要同步改另一处 -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-  <defs>
-    <linearGradient id="zfBg" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#1A4234"/>
-      <stop offset="1" stop-color="#0F3228"/>
-    </linearGradient>
-    <g id="zfMark">
-      <rect width="100" height="100" rx="22" fill="url(#zfBg)"/>
-      <rect x="19.4" y="17.4" width="61.2" height="65.2" rx="2.4" fill="none" stroke="#E8E1CF" stroke-width="2.8"/>
-      <g fill="#E8E1CF">
-        <rect x="28.7" y="21.54" width="2.6" height="52.82" rx="1.3"/>
-        <rect x="48.7" y="21.54" width="2.6" height="52.82" rx="1.3"/>
-        <rect x="68.7" y="21.54" width="2.6" height="52.82" rx="1.3"/>
-        <circle cx="30" cy="26.94" r="5.4"/><circle cx="50" cy="26.94" r="5.4"/><circle cx="70" cy="26.94" r="5.4"/>
-        <circle cx="30" cy="51.32" r="5.4"/><circle cx="50" cy="51.32" r="5.4"/><circle cx="70" cy="51.32" r="5.4"/>
-        <circle cx="30" cy="68.96" r="5.4"/><circle cx="50" cy="68.96" r="5.4"/><circle cx="70" cy="68.96" r="5.4"/>
-      </g>
-      <rect x="18" y="35.08" width="64" height="4" fill="#C0A26B"/>
-    </g>
-  </defs>
-</svg>
-
 <!-- ==================== Auth Pages ==================== -->
 <div class="auth-page" id="authPage">
   <div class="auth-card">
     <!-- Login Form -->
     <div id="loginForm">
       <div class="auth-header">
-        <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+        <img class="logo-mark" src="./icons/icon-nav.png" srcset="./icons/icon-nav.png 1x, ./icons/icon-nav@2x.png 2x" width="30" height="30" alt="">
         <h1>账房</h1>
         <p>轻轻记一笔，心里有本账</p>
       </div>
@@ -764,7 +741,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     <!-- Register Form -->
     <div id="registerForm" style="display:none">
       <div class="auth-header">
-        <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+        <img class="logo-mark" src="./icons/icon-nav.png" srcset="./icons/icon-nav.png 1x, ./icons/icon-nav@2x.png 2x" width="30" height="30" alt="">
         <h1>创建账户</h1>
         <p>开始记录你的大学生活开销</p>
       </div>
@@ -827,7 +804,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   <!-- Navbar -->
   <nav class="navbar">
     <div class="nav-left">
-      <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+      <img class="logo-mark" src="./icons/icon-nav.png" srcset="./icons/icon-nav.png 1x, ./icons/icon-nav@2x.png 2x" width="30" height="30" alt="">
       <h1>账房</h1>
       <span class="ver-badge" id="verBadge" title="查看更新历史" onclick="openChangelogHistory()"></span>
     </div>
@@ -964,7 +941,7 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
 <div class="bill-analysis" id="billAnalysis" style="display:none">
   <nav class="navbar">
     <div class="nav-left">
-      <svg class="logo-mark" viewBox="0 0 100 100" aria-hidden="true"><use href="#zfMark"/></svg>
+      <img class="logo-mark" src="./icons/icon-nav.png" srcset="./icons/icon-nav.png 1x, ./icons/icon-nav@2x.png 2x" width="30" height="30" alt="">
       <h1>账房 — 历史账单&amp;分析</h1>
     </div>
     <div class="nav-right">
@@ -1146,10 +1123,15 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.3.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.4.0'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.4.0', date: '2026-10-28', items: [
+    '图标重做：账本 + 计算器，深靛蓝底 / 奶油纸 / 黄铜，带层叠光影',
+    '圆角交给系统裁切，桌面图标和浏览器标签页都换成新图',
+    '导航栏、登录页的标记同步替换',
+  ]},
   { version: '3.3.0', date: '2026-10-28', items: [
     '改名为「账房」，全站图标与文案同步更新',
     '新图标：墨绿底 + 宣纸白算盘 + 黄铜横梁，替换原来的白账本',
