@@ -1111,10 +1111,13 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.2.4'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.2.5'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.2.5', date: '2026-10-28', items: [
+    '修复同一天内账单的时间顺序错乱（排序没读到数据库的时间字段）',
+  ]},
   { version: '3.2.4', date: '2026-10-28', items: [
     '版本号加了 ▾ 提示，通告里也写明可以点开看历史',
     '分析页手机端隐藏「返回主页」，标题不再被按钮遮住',
@@ -1225,12 +1228,21 @@ function todayLocal() {
     String(d.getDate()).padStart(2, '0');
 }
 
-// 账单显示用：日期 + 记账时刻（createdAt 存的是精确时间戳）
+// 取账单的精确时刻：createdAt 来自内存/离线队列，created_at 来自数据库
+function billTimestamp(bill) {
+  if (bill.createdAt) return bill.createdAt;
+  if (bill.created_at) {
+    const t = Date.parse(bill.created_at);
+    return isNaN(t) ? 0 : t;
+  }
+  return 0;
+}
+
+// 账单显示用：日期 + 记账时刻
 function formatBillTime(bill) {
   const d = String(bill.date || '');
   const md = d.length >= 10 ? d.slice(5) : d; // MM-DD
-  // createdAt 来自离线队列/内存，created_at 来自数据库（snake_case）
-  const ts = bill.createdAt || (bill.created_at ? Date.parse(bill.created_at) : 0);
+  const ts = billTimestamp(bill);
   if (!ts) return md;
   const t = new Date(ts);
   if (isNaN(t.getTime())) return md;
@@ -2762,8 +2774,9 @@ async function getFilteredBills() {
   // Sort
   bills.sort((a, b) => {
     switch (sortBy) {
-      case 'date_desc': return b.date.localeCompare(a.date) || (b.createdAt||0) - (a.createdAt||0);
-      case 'date_asc': return a.date.localeCompare(b.date) || (a.createdAt||0) - (b.createdAt||0);
+      // 同一天内再按精确时刻排，否则顺序取决于数据库返回顺序
+      case 'date_desc': return b.date.localeCompare(a.date) || billTimestamp(b) - billTimestamp(a);
+      case 'date_asc': return a.date.localeCompare(b.date) || billTimestamp(a) - billTimestamp(b);
       case 'amount_desc': return b.amount - a.amount;
       case 'amount_asc': return a.amount - b.amount;
       default: return b.date.localeCompare(a.date);
