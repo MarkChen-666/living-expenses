@@ -327,9 +327,19 @@ body {
 }
 .cat-empty { font-size: 12.5px; color: var(--text-muted); }
 
-/* Chart Card */
-.chart-wrap { max-width: 280px; margin: 0 auto; }
-.category-legend { margin-top: 16px; }
+/* Chart Card：整行，内部左圆环 / 右图例 */
+.chart-body {
+  display: grid;
+  grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+  gap: 40px;
+  align-items: center;
+  max-width: 920px;
+  margin: 0 auto;
+}
+.chart-total { font-size: 13px; font-weight: 600; color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+/* 网格项不能用 margin:auto 居中，否则会被缩成内容宽度（圆环只剩一百多像素） */
+.chart-wrap { width: 100%; max-width: 300px; justify-self: center; }
+.category-legend { margin-top: 0; }
 .category-legend-item {
   display: flex; align-items: center; gap: 16px;
   padding: 6px 0; font-size: 13px; border-bottom: 1px solid var(--border);
@@ -544,8 +554,12 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
   .converter-row > span[style] { display: none; } /* 隐藏中间的 →，省横向空间 */
   .converter-result { font-size: 16px; margin-left: 2px; }
 
-  /* 图表与图例 */
+  /* 图表与图例：竖屏下退回上下排列 */
+  /* minmax(0,1fr)：1fr 的最小值是 auto，会被图例的 nowrap 金额撑破，卡片溢出屏幕 */
+  .chart-body { grid-template-columns: minmax(0, 1fr); gap: 0; max-width: none; }
+  .chart-body > * { min-width: 0; }
   .chart-wrap { max-width: 240px; }
+  .category-legend { margin-top: 16px; }
   .category-legend-item { gap: 10px; font-size: 12.5px; }
   .legend-left { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .legend-right { font-size: 12px; }
@@ -903,12 +917,15 @@ body, .auth-page, .bill-analysis { min-height: 100vh; min-height: 100dvh; }
     </div>
 
     <!-- Chart Card -->
-    <div class="card" id="chartCard">
+    <div class="card card-full" id="chartCard">
       <div class="card-header">
         <h2><span class="card-icon">📊</span> 本月分类占比</h2>
+        <span class="chart-total" id="chartTotal"></span>
       </div>
-      <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
-      <div class="category-legend" id="categoryLegend"></div>
+      <div class="chart-body">
+        <div class="chart-wrap"><canvas id="categoryChart"></canvas></div>
+        <div class="category-legend" id="categoryLegend"></div>
+      </div>
     </div>
 
 
@@ -1123,10 +1140,15 @@ function resolveCategory(bill) {
   return { category, subcategory, display: subcategory || category };
 }
 
-const APP_VERSION = '3.4.0'; // 更新时递增，用于确认浏览器加载的是最新版本
+const APP_VERSION = '3.4.1'; // 更新时递增，用于确认浏览器加载的是最新版本
 
 // 更新通告：每次发版在数组最前面加一条，version 必须与 APP_VERSION 一致
 const CHANGELOG = [
+  { version: '3.4.1', date: '2026-10-31', items: [
+    '圆环图卡片改为整行，电脑端改成左边圆环、右边图例，右下角不再空一大块',
+    '卡片右上角显示本月分类合计金额',
+    '手机端仍是上下排列，不受影响',
+  ]},
   { version: '3.4.0', date: '2026-10-28', items: [
     '图标重做：账本 + 计算器，深靛蓝底 / 奶油纸 / 黄铜，带层叠光影',
     '圆角交给系统裁切，桌面图标和浏览器标签页都换成新图',
@@ -2144,6 +2166,9 @@ function updateChart(monthBills, settings) {
     .sort((a, b) => b.amount - a.amount);
 
   const total = items.reduce((s, it) => s + it.amount, 0);
+
+  const totalEl = $('chartTotal');
+  if (totalEl) totalEl.textContent = items.length ? formatCurrency(total, settings.budgetCurrency) : '';
 
   // Destroy previous chart
   if (chartInstance) { chartInstance.destroy(); chartInstance = null; }
